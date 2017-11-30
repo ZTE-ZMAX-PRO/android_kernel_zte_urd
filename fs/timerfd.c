@@ -416,12 +416,7 @@ static int do_timerfd_settime(int ufd, int flags,
 	/*
 	 * Re-program the timer to the new value ...
 	 */
-
-    if((new->it_value.tv_sec > 5) || (new->it_interval.tv_sec > 5))
-        printk("ZTE_PM_ALARM set alarm by do_timerfd_settime  %ld s and interval %ld s\n",new->it_value.tv_sec,new->it_interval.tv_sec);
-
-
-    ret = timerfd_setup(ctx, flags, new);
+	ret = timerfd_setup(ctx, flags, new);
 
 	spin_unlock_irq(&ctx->wqh.lock);
 
