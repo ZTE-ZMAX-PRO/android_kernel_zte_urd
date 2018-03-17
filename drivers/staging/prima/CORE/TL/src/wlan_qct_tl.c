@@ -7822,7 +7822,7 @@ WLANTL_FatalErrorHandler
     * Issue SSR. vos_wlanRestart has tight checks to make sure that
     * we do not send an FIQ if previous FIQ is not processed
     */
-   vos_wlanRestart(VOS_REASON_UNSPECIFIED);
+   vos_wlanRestart();
 }
 
 /*==========================================================================
@@ -8740,7 +8740,7 @@ WLANTL_STATxAuth
 
   /* This code is to send traffic with lower priority AC when we does not 
      get admitted to send it. Today HAL does not downgrade AC so this code 
-     does not get executed.(In other words, HAL doesn’t change tid. The if 
+     does not get executed.(In other words, HAL doesn\92t change tid. The if 
      statement is always false.)
      NOTE: In the case of LA downgrade occurs in HDD (that was the change 
      Phani made during WMM-AC plugfest). If WM & BMP also took this approach, 

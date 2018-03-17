@@ -483,7 +483,7 @@ tSmeCmd *smeGetCommandBuffer( tpAniSirGlobal pMac )
         else
         {
            /* Trigger SSR */
-           vos_wlanRestart(VOS_GET_MSG_BUFF_FAILURE);
+           vos_wlanRestart();
         }
     }
 
@@ -3323,9 +3323,8 @@ eHalStatus sme_ScanRequest(tHalHandle hHal, tANI_U8 sessionId, tCsrScanRequest *
 
     do
     {
-        //Moto IKVPREL1L-7890: Dont block any scans while in BT call similar to titan/Victara
-        if(pMac->scan.fScanEnable) /*&&
-           (pMac->isCoexScoIndSet ? sco_isScanAllowed(pMac, pscanReq) : TRUE))*/
+        if(pMac->scan.fScanEnable &&
+           (pMac->isCoexScoIndSet ? sco_isScanAllowed(pMac, pscanReq) : TRUE))
         {
             status = sme_AcquireGlobalLock( &pMac->sme );
             if ( HAL_STATUS_SUCCESS( status ) )
@@ -12802,7 +12801,7 @@ void activeListCmdTimeoutHandle(void *userData)
        if (!(vos_isLoadUnloadInProgress() ||
            vos_is_logp_in_progress(VOS_MODULE_ID_SME, NULL)))
        {
-          vos_wlanRestart(VOS_ACTIVE_LIST_TIMEOUT);
+          vos_wlanRestart();
        }
     }
 }

@@ -3392,7 +3392,7 @@ VOS_STATUS csrNeighborRoamCreateChanListFromNeighborReport(tpAniSirGlobal pMac)
                 break;
         }
 
-        if (i == numChannels && i < MAX_BSS_IN_NEIGHBOR_RPT)
+        if (i == numChannels)
         {
             if (pNeighborBssDesc->pNeighborBssDescription->channel)
             {
@@ -5416,7 +5416,7 @@ eHalStatus csrNeighborRoamCandidateFoundIndHdlr(tpAniSirGlobal pMac, void* pMsg)
          * purge non-P2P results from the past */
         csrScanFlushSelectiveResult(pMac, VOS_FALSE);
         /* Once it gets the candidates found indication from PE, will issue a scan
-         - req to PE with “freshScan” in scanreq structure set as follows:
+         - req to PE with \93freshScan\94 in scanreq structure set as follows:
          0x42 - Return & purge LFR scan results
         */
         status = csrScanRequestLfrResult(pMac, pNeighborRoamInfo->csrSessionId,
