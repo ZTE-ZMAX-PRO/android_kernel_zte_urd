@@ -25,7 +25,7 @@
 
 #define DEBUG
 
-#include <vfsSpiDrv.h>
+#include "vfsSpiDrv.h"
 
 #include <linux/kernel.h>
 #include <linux/cdev.h>
