@@ -17,6 +17,14 @@
 #include "msm_camera_i2c_mux.h"
 #include <linux/regulator/rpm-smd-regulator.h>
 #include <linux/regulator/consumer.h>
+/*
+  * use  camera sensor engineering mode  interface
+  * use  test camera sensor mipi clock interface
+  * by ZTE_YCM_20140710 yi.changming 000006
+  */
+// --->
+#include "zte_camera_sensor_util.h"
+ // <---
 
 #undef CDBG
 #define CDBG(fmt, args...) pr_debug(fmt, ##args)
@@ -1731,6 +1739,16 @@ int32_t msm_sensor_platform_probe(struct platform_device *pdev,
 
 	s_ctrl->func_tbl->sensor_power_down(s_ctrl);
 	CDBG("%s:%d\n", __func__, __LINE__);
+/*
+  * use  camera sensor engineering mode  interface
+  * use  test camera sensor mipi clock interface
+  * by ZTE_YCM_20140710 yi.changming 000006
+  */
+// --->
+	if(msm_sensor_enable_debugfs(s_ctrl))
+		CDBG("%s:%d creat debugfs fail\n", __func__, __LINE__);
+	msm_sensor_register_sysdev(s_ctrl);
+// <---	
 	return rc;
 }
 
@@ -1852,6 +1870,17 @@ int msm_sensor_i2c_probe(struct i2c_client *client,
 	CDBG("%s:%d\n", __func__, __LINE__);
 
 	s_ctrl->func_tbl->sensor_power_down(s_ctrl);
+/*
+  * use  camera sensor engineering mode  interface
+  * use  test camera sensor mipi clock interface
+  * by ZTE_YCM_20140710 yi.changming 000006
+  */
+// --->
+	if(msm_sensor_enable_debugfs(s_ctrl))
+		CDBG("%s:%d creat debugfs fail\n", __func__, __LINE__);
+	msm_sensor_register_sysdev(s_ctrl);
+// <---	
+
 	return rc;
 }
 

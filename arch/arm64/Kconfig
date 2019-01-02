@@ -208,6 +208,7 @@ config ARCH_MSM
 config ARCH_MSM8916
 	bool "Enable Support for Qualcomm MSM8916"
 	depends on ARCH_MSM
+	select ZTE_BOOT_MODE
 	select RCU_BOOST if DEBUG_KMEMLEAK
 	help
 	  This enables support for the MSM8916 chipset. If you dont
@@ -249,6 +250,62 @@ config ARCH_XGENE
 	bool "AppliedMicro X-Gene SOC Family"
 	help
 	  This enables support for AppliedMicro X-Gene SOC Family
+
+endmenu
+
+config ZTE_BOOT_MODE
+        depends on ARCH_MSM8916
+        bool "ZTE BOOT MODE"
+        default n
+        help
+          Support for boot mode
+
+config ZTE_PIL_AUTH_ERROR_DETECTION
+        depends on ARCH_MSM8916
+        bool "ZTE PIL AUTH ERROR DETECTION"
+        default n
+        help
+	  When authorization of PIL images is failed, the system
+	  will enter into UNAUTH mode to show related error message.
+
+menu "MSM Board Selection"
+
+config BOARD_ORCHID
+    depends on ARCH_MSM8916
+    select ZTE_BOARD_ID
+    bool "ZTE ORCHID"
+    help
+      Support for ZTE MSM8916 ORCHID device.
+
+config BOARD_JERRY
+    depends on ARCH_MSM8916
+    select ZTE_BOARD_ID
+    bool "ZTE JERRY"
+    select SND_SOC_AK4375     
+    help
+      Support for ZTE MSM8916 JERRY device.
+      Audio select AK4375 for USA project.       
+
+config BOARD_JASMINE
+    depends on ARCH_MSM8916
+    select ZTE_BOARD_ID
+    bool "ZTE JASMINE"
+    help
+      Support for ZTE MSM8916 JASMINE device.
+
+config BOARD_URD
+    depends on ARCH_MSM8916
+    select ZTE_BOARD_ID
+    bool "ZTE URD"
+    help
+      Support for ZTE MSM8916 URD device.
+
+config BOARD_GEVJON
+    depends on ARCH_MSM8916
+    select ZTE_BOARD_ID
+    bool "ZTE GEVJON"
+    help
+      Support for ZTE MSM8916 GEVJON device.
 
 endmenu
 

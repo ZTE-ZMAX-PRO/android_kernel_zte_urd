@@ -61,6 +61,7 @@
 #include <asm/psci.h>
 #include <asm/efi.h>
 
+int emmc_version_5_0 =0;
 unsigned int processor_id;
 EXPORT_SYMBOL(processor_id);
 
@@ -75,6 +76,9 @@ EXPORT_SYMBOL(cold_boot);
 
 char* (*arch_read_hardware_id)(void);
 EXPORT_SYMBOL(arch_read_hardware_id);
+#if 1    //ZTE_XJB_20130216 for power_off charging
+int offcharging_flag=0;
+#endif//ZTE
 
 #ifdef CONFIG_COMPAT
 #define COMPAT_ELF_HWCAP_DEFAULT	\
@@ -390,7 +394,21 @@ void __init setup_arch(char **cmdline_p)
 	init_mm.end_code   = (unsigned long) _etext;
 	init_mm.end_data   = (unsigned long) _edata;
 	init_mm.brk	   = (unsigned long) _end;
+#if 1   //ZTE_XJB_20130216 for power_off charging
+        //get the boot mode here.
+	if (strstr(boot_command_line, "androidboot.mode=charger"))
+	{
+		offcharging_flag = 1;
+		printk("ZTE :boot mode is offcharging/charger \n"); //ZTE
+	}
+#endif
 
+       /*get emmc_hynix_version from cmdline if it is Hynix and V5.0*/
+       if (strstr(boot_command_line, "emmc.hynix.verison=7"))
+       {
+		emmc_version_5_0 = 1;
+		pr_err("ZTE :emmc hynix version is 5.0\n");
+       }
 	*cmdline_p = boot_command_line;
 
 	init_mem_pgprot();

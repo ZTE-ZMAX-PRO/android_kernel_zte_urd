@@ -670,7 +670,7 @@ static int msm_compr_send_media_format_block(struct snd_compr_stream *cstream,
 
 	switch (prtd->codec) {
 	case FORMAT_LINEAR_PCM:
-		pr_debug("SND_AUDIOCODEC_PCM\n");
+		pr_err("chenjun:FORMAT_LINEAR_PCM\n");
 		if (pdata->ch_map[rtd->dai_link->be_id]) {
 			use_default_chmap =
 			    !(pdata->ch_map[rtd->dai_link->be_id]->set_ch_map);
@@ -844,6 +844,7 @@ static int msm_compr_send_media_format_block(struct snd_compr_stream *cstream,
 		pr_debug("%s, unsupported format, skip", __func__);
 		break;
 	}
+	pr_err("%s: chenjun: codec(%#X), format(%#X), bits(%d)\n", __func__, prtd->codec, prtd->codec_param.codec.format, bit_width); // chenjun
 	return ret;
 }
 
@@ -916,6 +917,19 @@ static int msm_compr_configure_dsp(struct snd_compr_stream *cstream)
 		bits_per_sample = 24;
 	else if (prtd->codec_param.codec.format == SNDRV_PCM_FORMAT_S32_LE)
 		bits_per_sample = 32;
+
+// chenjun
+	pr_err("%s: chenjun: codec(%#X), rate(%d), bits(%d)\n", __func__, prtd->codec, prtd->sample_rate, bits_per_sample); // chenjun
+
+       if (((FORMAT_LINEAR_PCM == prtd->codec) || (FORMAT_MP3 == prtd->codec)/* || (FORMAT_FLAC == prtd->codec) */)
+           && (44100 == prtd->sample_rate))
+       { // chenjun:ToDo: add limit with format in PCM_FORMAT, FLAC and MP3?
+           bits_per_sample = 24;
+       pr_err("%s: chenjun: change to codec(%#X), rate(%d), bits(%d)\n", __func__, prtd->codec, prtd->sample_rate, bits_per_sample); // chenjun
+       }
+//
+
+	pr_err("%s: chenjun: stream_id %d, bits(%d)\n", __func__, ac->stream_id, bits_per_sample); // chenjun
 
 	if (prtd->compr_passthr != LEGACY_PCM) {
 		ret = q6asm_open_write_compressed(ac, prtd->codec,
@@ -1265,6 +1279,8 @@ static int msm_compr_set_params(struct snd_compr_stream *cstream,
 			return -EINVAL;
 		}
 	}
+
+	pr_err("%s: chenjun: sample_rate %d id %d format %d\n", __func__, prtd->sample_rate, params->codec.id, params->codec.format);
 
 	switch (params->codec.id) {
 	case SND_AUDIOCODEC_PCM: {
@@ -1839,6 +1855,18 @@ static int msm_compr_trigger(struct snd_compr_stream *cstream, int cmd)
 			 SNDRV_PCM_FORMAT_S32_LE)
 			bits_per_sample = 32;
 
+// chenjun
+		pr_err("%s: chenjun: codec(%#X), rate(%d), bits(%d)\n", __func__, prtd->codec, prtd->sample_rate, bits_per_sample); // chenjun
+
+		if (((FORMAT_LINEAR_PCM == prtd->codec) || (FORMAT_MP3 == prtd->codec)/* || (FORMAT_FLAC == prtd->codec) */)
+			&& (44100 == prtd->sample_rate))
+		{ // chenjun:ToDo: add limit with format in PCM_FORMAT, FLAC and MP3?
+			bits_per_sample = 24;
+			pr_err("%s: chenjun: change to codec(%#X), rate(%d), bits(%d)\n", __func__, prtd->codec, prtd->sample_rate, bits_per_sample); // chenjun
+		}
+//
+
+		pr_err("%s: chenjun: stream_id %d, bits(%d)\n", __func__, stream_id, bits_per_sample); // chenjun
 		pr_debug("%s: open_write stream_id %d bits_per_sample %d",
 				__func__, stream_id, bits_per_sample);
 		rc = q6asm_stream_open_write_v2(prtd->audio_client,

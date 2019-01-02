@@ -28,24 +28,47 @@ DEFINE_MSM_MUTEX(ov2685_scv3b4035_mut);
 static struct msm_sensor_ctrl_t ov2685_scv3b4035_s_ctrl;
 
 static struct msm_sensor_power_setting ov2685_scv3b4035_power_setting[] = {
+	/*back camera and back aux have public vio, so vio can't low*/
+	/*
 	{
-		.seq_type = SENSOR_VREG,
-		.seq_val = CAM_VIO,
-		.config_val = 0,
+		.seq_type = SENSOR_GPIO,
+		.seq_val = SENSOR_GPIO_VIO,
+		.config_val = GPIO_OUT_LOW,
+		.delay = 1,
+	},
+	*/
+	{
+		.seq_type = SENSOR_GPIO,
+		.seq_val = SENSOR_GPIO_VANA,
+		.config_val = GPIO_OUT_LOW,
 		.delay = 1,
 	},
 	{
-		.seq_type = SENSOR_VREG,
-		.seq_val = CAM_VANA,
-		.config_val = 0,
+		.seq_type = SENSOR_GPIO,
+		.seq_val = SENSOR_GPIO_VDIG,
+		.config_val =GPIO_OUT_LOW,
 		.delay = 1,
 	},
 	{
-		.seq_type = SENSOR_VREG,
-		.seq_val = CAM_VDIG,
-		.config_val = 0,
+		.seq_type = SENSOR_GPIO,
+		.seq_val = SENSOR_GPIO_VIO,
+		.config_val = GPIO_OUT_HIGH,
+		.delay = 0,
+	},
+	
+	{
+		.seq_type = SENSOR_GPIO,
+		.seq_val = SENSOR_GPIO_VDIG,
+		.config_val =GPIO_OUT_HIGH,
 		.delay = 1,
 	},
+	{
+		.seq_type = SENSOR_GPIO,
+		.seq_val = SENSOR_GPIO_VANA,
+		.config_val = GPIO_OUT_HIGH,
+		.delay = 1,
+	},
+
 	{
 		.seq_type = SENSOR_GPIO,
 		.seq_val = SENSOR_GPIO_RESET,
@@ -156,8 +179,8 @@ static struct msm_camera_i2c_reg_conf
 	{0x3814, 0x11},
 	{0x3815, 0x11},
 	{0x3819, 0x04},
-	{0x3820, 0xC0},
-	{0x3821, 0x00},
+	{0x3820, 0xC4},
+	{0x3821, 0x04},
 	{0x3A06, 0x01},
 	{0x3A07, 0x84},
 	{0x3A08, 0x01},
@@ -361,6 +384,13 @@ static struct msm_camera_i2c_reg_conf
 	{0x581B, 0x0C},
 	{0x3A03, 0x4C},
 	{0x3A04, 0x40},
+#if 0
+	{0x3080, 0x00},
+	{0x3018, 0x44},
+	{0x3084, 0x0F},
+	{0x3085, 0x07},
+	{0x4837, 0x0F},
+#else
 	{0x3080, 0x02}, //change for 24fps
 	{0x3082, 0x48}, //change for 24fps
 	{0x3018, 0x44}, //change for 24fps
@@ -369,7 +399,7 @@ static struct msm_camera_i2c_reg_conf
 	{0x380d, 0xc8}, //change for 24fps
 	{0x380f, 0x10}, //change for 24fps
 	{0x4837, 0x12}, //change for 24fps
-
+#endif
 	/* FSIN setup */
 	{0x3002, 0x00},
 	{0x3823, 0x30},
@@ -441,8 +471,8 @@ static struct msm_camera_i2c_reg_conf ov2685_scv3b4035_720p60_settings[] = {
 	{0x3814, 0x11},
 	{0x3815, 0x11},
 	{0x3819, 0x04},
-	{0x3820, 0xC0},
-	{0x3821, 0x00},
+	{0x3820, 0xC4},
+	{0x3821, 0x04},
 	{0x3A06, 0x01},
 	{0x3A07, 0xC8},
 	{0x3A08, 0x01},
@@ -769,7 +799,7 @@ static struct platform_driver ov2685_scv3b4035_platform_driver = {
 static int __init ov2685_scv3b4035_init_module(void)
 {
 	int32_t rc;
-
+	pr_err("%s:%d \n", __func__, __LINE__);
 	rc = platform_driver_register(&ov2685_scv3b4035_platform_driver);
 	if (!rc)
 		return rc;
@@ -779,7 +809,7 @@ static int __init ov2685_scv3b4035_init_module(void)
 
 static void __exit ov2685_scv3b4035_exit_module(void)
 {
-	pr_info("%s:%d\n", __func__, __LINE__);
+	pr_err("%s:%d\n", __func__, __LINE__);
 	if (ov2685_scv3b4035_s_ctrl.pdev) {
 		msm_sensor_free_sensor_data(&ov2685_scv3b4035_s_ctrl);
 		platform_driver_unregister(&ov2685_scv3b4035_platform_driver);

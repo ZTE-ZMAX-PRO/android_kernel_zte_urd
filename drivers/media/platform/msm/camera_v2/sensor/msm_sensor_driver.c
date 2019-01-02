@@ -17,7 +17,15 @@
 #include "camera.h"
 #include "msm_cci.h"
 #include "msm_camera_dt_util.h"
+/*
+  * use  camera sensor engineering mode  interface
+  * use  test camera sensor mipi clock interface
+  * by ZTE_YCM_20140710 yi.changming 000006
+  */
+// --->
+#include "zte_camera_sensor_util.h"
 
+ 
 /* Logging macro */
 #undef CDBG
 #define CDBG(fmt, args...) pr_debug(fmt, ##args)
@@ -661,6 +669,13 @@ int32_t msm_sensor_driver_probe(void *setting,
 
 	unsigned long                        mount_pos = 0;
 	uint32_t                             is_yuv;
+/*
+ * add by lijing for flash
+ * ZTE_CAM_LIJING_20151020
+ */
+#if 1
+	uint32_t                             has_flash = 0;
+#endif
 
 	/* Validate input parameters */
 	if (!setting) {
@@ -945,6 +960,14 @@ CSID_TG:
 		s_ctrl->sensordata->sensor_info->
 			subdev_id[SUB_MODULE_LED_FLASH] = -1;
 	}
+/*
+ * add by lijing for flash
+ * ZTE_CAM_LIJING_20151020
+ */
+#if 1
+	else
+		 has_flash = 1;
+#endif
 
 	/*
 	 * Create /dev/videoX node, comment for now until dummy /dev/videoX
@@ -978,10 +1001,21 @@ CSID_TG:
 	}
 	/* Update sensor mount angle and position in media entity flag */
 	is_yuv = (slave_info->output_format == MSM_SENSOR_YCBCR) ? 1 : 0;
+/*
+ * add by lijing for flash
+ * ZTE_CAM_LIJING_20151020
+ */
+#if 0
 	mount_pos = is_yuv << 25 |
 		(s_ctrl->sensordata->sensor_info->position << 16) |
 		((s_ctrl->sensordata->
 		sensor_info->sensor_mount_angle / 90) << 8);
+#else
+	mount_pos = is_yuv << 25 | has_flash << 26 |
+		(s_ctrl->sensordata->sensor_info->position << 16) |
+		((s_ctrl->sensordata->
+		sensor_info->sensor_mount_angle / 90) << 8);
+#endif
 
 	s_ctrl->msm_sd.sd.entity.flags = mount_pos | MEDIA_ENT_FL_DEFAULT;
 
@@ -989,6 +1023,17 @@ CSID_TG:
 	s_ctrl->sensordata->cam_slave_info = slave_info;
 
 	msm_sensor_fill_sensor_info(s_ctrl, probed_info, entity_name);
+/*
+  * use  camera sensor engineering mode  interface
+  * use  test camera sensor mipi clock interface
+  * by ZTE_YCM_20140710 yi.changming 000006
+  */
+// --->
+	if(msm_sensor_enable_debugfs(s_ctrl))
+		CDBG("%s:%d creat debugfs fail\n", __func__, __LINE__);
+
+	msm_sensor_register_sysdev(s_ctrl);
+// <---
 
 	return rc;
 

@@ -49,6 +49,7 @@
  * we do not waste memory on systems that are not using tracing.
  */
 bool ring_buffer_expanded;
+bool abs_time = false;
 
 /*
  * We need to change this state when a selftest is running.
@@ -683,6 +684,7 @@ static int __init set_buf_size(char *str)
 	if (buf_size == 0)
 		return 0;
 	trace_buf_size = buf_size;
+
 	return 1;
 }
 __setup("trace_buf_size=", set_buf_size);
@@ -1479,9 +1481,11 @@ void trace_find_cmdline(int pid, char comm[])
 	preempt_disable();
 	arch_spin_lock(&trace_cmdline_lock);
 	map = map_pid_to_cmdline[pid];
-	if (map != NO_CMDLINE_MAP)
-		strcpy(comm, saved_cmdlines[map]);
-	else
+	if (map != NO_CMDLINE_MAP) {
+		//strcpy(comm, saved_cmdlines[map]);
+		strncpy(comm, saved_cmdlines[map], TASK_COMM_LEN-1);
+		*(comm + TASK_COMM_LEN-1) = 0;
+	} else
 		strcpy(comm, "<...>");
 
 	arch_spin_unlock(&trace_cmdline_lock);
@@ -4528,6 +4532,9 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
 	ret = tracing_resize_ring_buffer(tr, val, tracing_get_cpu(inode));
 	if (ret < 0)
 		return ret;
+	
+	if ( val == 1048576 )
+	   abs_time = true;
 
 	*ppos += cnt;
 

@@ -42,6 +42,8 @@
 
 #include "peripheral-loader.h"
 
+#include <linux/reboot.h>
+
 #define pil_err(desc, fmt, ...)						\
 	dev_err(desc->dev, "%s: " fmt, desc->name, ##__VA_ARGS__)
 #define pil_info(desc, fmt, ...)					\
@@ -710,6 +712,11 @@ int pil_boot(struct pil_desc *desc)
 		ret = desc->ops->init_image(desc, fw->data, fw->size);
 	if (ret) {
 		pil_err(desc, "Invalid firmware metadata\n");
+#ifdef CONFIG_ZTE_PIL_AUTH_ERROR_DETECTION
+		if (ret == -ENOEXEC) {
+			kernel_restart("unauth");
+		}
+#endif
 		goto err_boot;
 	}
 

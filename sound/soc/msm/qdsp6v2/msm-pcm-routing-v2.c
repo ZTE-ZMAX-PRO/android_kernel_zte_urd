@@ -751,6 +751,20 @@ int msm_pcm_routing_reg_phy_stream(int fedai_id, int perf_mode,
 			acdb_dev_id = fe_dai_app_type_cfg[fedai_id].acdb_dev_id;
 			topology = msm_routing_get_adm_topology(path_type,
 								fedai_id);
+
+	pr_err("%s: chenjun: app_type(%#X), app_type_idx(%d), rate(%d), bits(%d), acdb_dev_id(%d)\n",
+		 __func__, app_type, app_type_idx, sample_rate, bits_per_sample, acdb_dev_id);
+
+// chenjun
+  if ((SNDRV_PCM_STREAM_PLAYBACK == stream_type)
+      && (perf_mode < LOW_LATENCY_PCM_MODE))
+  {
+	bits_per_sample = 24;
+
+	pr_err("%s: chenjun: PLAYBACK change to 24bits(%d)\n",
+		 __func__, bits_per_sample);
+  }
+//
 			copp_idx = adm_open(msm_bedais[i].port_id, path_type,
 					    sample_rate, channels, topology,
 					    perf_mode, bits_per_sample,
@@ -791,6 +805,10 @@ int msm_pcm_routing_reg_phy_stream(int fedai_id, int perf_mode,
 		payload.app_type = fe_dai_app_type_cfg[fedai_id].app_type;
 		payload.acdb_dev_id = fe_dai_app_type_cfg[fedai_id].acdb_dev_id;
 		payload.sample_rate = fe_dai_app_type_cfg[fedai_id].sample_rate;
+
+	pr_err("%s: chenjun: matrix payload: num_copps(%d), app_type(%#X), acdb_dev_id(%d), rate(%d)\n",
+		 __func__, num_copps, payload.app_type, payload.acdb_dev_id, payload.sample_rate);
+
 		adm_matrix_map(path_type, payload, perf_mode);
 		msm_pcm_routng_cfg_matrix_map_pp(payload, path_type, perf_mode);
 	}
@@ -963,6 +981,20 @@ static void msm_pcm_routing_process_audio(u16 reg, u16 val, int set)
 
 			topology = msm_routing_get_adm_topology(path_type, val);
 			acdb_dev_id = fe_dai_app_type_cfg[val].acdb_dev_id;
+
+	pr_err("%s: chenjun: app_type(%#X), app_type_idx(%d), rate(%d), bits(%d), acdb_dev_id(%d)\n",
+		 __func__, app_type, app_type_idx, sample_rate, bits_per_sample, acdb_dev_id);
+
+// chenjun
+  if ((SESSION_TYPE_RX == session_type)
+      && (fdai->perf_mode < LOW_LATENCY_PCM_MODE))
+  {
+	bits_per_sample = 24;
+
+	pr_err("%s: chenjun: RX change to 24bits(%d)\n",
+		 __func__, bits_per_sample);
+  }
+//
 			copp_idx = adm_open(msm_bedais[reg].port_id, path_type,
 					    sample_rate, channels, topology,
 					    fdai->perf_mode, bits_per_sample,
@@ -1647,10 +1679,34 @@ static const struct snd_kcontrol_new ext_ec_ref_mux_ul9 =
 static int msm_routing_ext_ec_get(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s: ext_ec_ref_rx  = %x\n", __func__, msm_route_ext_ec_ref);
+	int ec_ref_ctl_value = 0; // chenjun
+
+	pr_err("%s: ext_ec_ref_rx  = %x\n", __func__, msm_route_ext_ec_ref);
 
 	mutex_lock(&routing_lock);
-	ucontrol->value.integer.value[0] = msm_route_ext_ec_ref;
+
+// chenjun
+	switch (msm_route_ext_ec_ref) {
+	case AFE_PORT_ID_PRIMARY_MI2S_TX:
+		ec_ref_ctl_value = EC_PORT_ID_PRIMARY_MI2S_TX;
+		break;
+	case AFE_PORT_ID_SECONDARY_MI2S_TX:
+		ec_ref_ctl_value = EC_PORT_ID_SECONDARY_MI2S_TX;
+		break;
+	case AFE_PORT_ID_TERTIARY_MI2S_TX:
+		ec_ref_ctl_value = EC_PORT_ID_TERTIARY_MI2S_TX;
+		break;
+	case AFE_PORT_ID_QUATERNARY_MI2S_TX:
+		ec_ref_ctl_value = EC_PORT_ID_QUATERNARY_MI2S_TX;
+		break;
+	default:
+		ec_ref_ctl_value = 0;
+		break;
+	}
+//
+
+	ucontrol->value.integer.value[0] = ec_ref_ctl_value;
+
 	mutex_unlock(&routing_lock);
 	return 0;
 }
@@ -1665,7 +1721,7 @@ static int msm_routing_ext_ec_put(struct snd_kcontrol *kcontrol,
 	int ret = 0;
 	bool state = false;
 
-	pr_debug("%s: msm_route_ec_ref_rx = %d value = %ld\n",
+	pr_err("%s: msm_route_ec_ref_rx = %d value = %ld\n",
 		 __func__, msm_route_ext_ec_ref,
 		 ucontrol->value.integer.value[0]);
 
@@ -4101,7 +4157,7 @@ static int msm_routing_put_app_type_cfg_control(struct snd_kcontrol *kcontrol,
 	int i = 0, j;
 	int num_app_types = ucontrol->value.integer.value[i++];
 
-	pr_debug("%s\n", __func__);
+	pr_err("%s: chenjun: num_app_types(%d)\n", __func__, num_app_types);
 
 	memset(app_type_cfg, 0, MAX_APP_TYPES*
 				sizeof(struct msm_pcm_routing_app_type_data));
@@ -6123,6 +6179,7 @@ static const struct snd_soc_dapm_route intercon[] = {
 	{"PRI_MI2S_RX", NULL, "PRI_MI2S_RX Port Mixer"},
 
 	{"QUAT_MI2S_RX Port Mixer", "PRI_MI2S_TX", "PRI_MI2S_TX"},
+	{"QUAT_MI2S_RX Port Mixer", "TERT_MI2S_TX", "TERT_MI2S_TX"},
 	{"QUAT_MI2S_RX Port Mixer", "INTERNAL_FM_TX", "INT_FM_TX"},
 	{"QUAT_MI2S_RX", NULL, "QUAT_MI2S_RX Port Mixer"},
 
@@ -6347,6 +6404,22 @@ static int msm_pcm_routing_prepare(struct snd_pcm_substream *substream)
 				sample_rate = bedai->sample_rate;
 			channels = bedai->channel;
 			acdb_dev_id = fe_dai_app_type_cfg[i].acdb_dev_id;
+
+	pr_err("%s: chenjun: app_type(%#X), app_type_idx(%d), rate(%d), bits(%d), acdb_dev_id(%d)\n",
+		 __func__, app_type, app_type_idx, sample_rate, bits_per_sample, acdb_dev_id);
+
+// chenjun
+  if ((playback)
+      && (fdai->perf_mode < LOW_LATENCY_PCM_MODE))
+  {
+
+	bits_per_sample = 24;
+
+	pr_err("%s: chenjun: playback change to 24bits(%d)\n",
+		 __func__, bits_per_sample);
+  }
+//
+
 			topology = msm_routing_get_adm_topology(path_type, i);
 			copp_idx = adm_open(bedai->port_id, path_type,
 					    sample_rate, channels, topology,

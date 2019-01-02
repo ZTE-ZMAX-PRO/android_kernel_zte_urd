@@ -24,6 +24,9 @@
 
 #include <soc/qcom/scm.h>
 
+#ifdef CONFIG_ZTE_PIL_AUTH_ERROR_DETECTION
+#define SCM_UNAUTH		-1001
+#endif
 #define SCM_ENOMEM		-5
 #define SCM_EOPNOTSUPP		-4
 #define SCM_EINVAL_ADDR		-3
@@ -170,6 +173,10 @@ static int scm_remap_error(int err)
 		return SCM_EBUSY;
 	case SCM_V2_EBUSY:
 		return SCM_V2_EBUSY;
+#ifdef CONFIG_ZTE_PIL_AUTH_ERROR_DETECTION
+	case SCM_UNAUTH:
+		return -ENOEXEC;
+#endif
 	}
 	return -EINVAL;
 }

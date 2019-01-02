@@ -284,6 +284,14 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
 				}
 			}
 #endif
+#ifdef CONFIG_TASKSTATS
+                        diff = ktime_sub(ktime_get(), host->perf.last_check);
+                        if (ktime_to_us(diff) >= 1000000 ){
+                                host->perf.last_check = ktime_get();
+                                trace_mmc_blk_rw_summary(host->perf.rbytes_drv, ktime_to_us(host->perf.rtime_drv),
+                                          host->perf.wbytes_drv, ktime_to_us(host->perf.wtime_drv));
+                        }
+#endif
 			pr_debug("%s:     %d bytes transferred: %d\n",
 				mmc_hostname(host),
 				mrq->data->bytes_xfered, mrq->data->error);
@@ -4127,6 +4135,14 @@ int mmc_suspend_host(struct mmc_host *host)
 		if (host->ops->notify_pm_status)
 			host->ops->notify_pm_status(host, DEV_SUSPENDING);
 		/*
+		 * Disable clock scaling before suspend and enable it after
+		 * resume so as to avoid clock scaling decisions kicking in
+		 * during this window.
+		 */
+		if (mmc_can_scale_clk(host))
+			mmc_disable_clk_scaling(host);
+
+		/*
 		 * A long response time is not acceptable for device drivers
 		 * when doing suspend. Prevent mmc_claim_host in the suspend
 		 * sequence, to potentially wait "forever" by trying to
@@ -4189,6 +4205,8 @@ int mmc_suspend_host(struct mmc_host *host)
 		mmc_release_host(host);
 	}
 
+	if (err && mmc_can_scale_clk(host))
+		mmc_init_clk_scaling(host);
 	trace_mmc_suspend_host(mmc_hostname(host), err,
 			ktime_to_us(ktime_sub(ktime_get(), start)));
 	if (host->ops->notify_pm_status)

@@ -186,7 +186,26 @@ static void mdss_dsi_28nm_phy_regulator_enable(
 				+ 0x18, pd->regulator[6]);
 		/* Add H/w recommended delay */
 		udelay(1000);
+	#if defined( CONFIG_BOARD_URD)  //only for P895T20 ,set DC-DC from 0.415v to 0.385v for mipi test
 		/* Regulator ctrl 1 */
+		MIPI_OUTP((ctrl_pdata->phy_regulator_io.base)
+				+ 0x4, pd->regulator[1]);
+		/* Regulator ctrl 2 */
+		MIPI_OUTP((ctrl_pdata->phy_regulator_io.base)
+				+ 0x8, 5);
+		/* Regulator ctrl 3 */
+		MIPI_OUTP((ctrl_pdata->phy_regulator_io.base)
+				+ 0xc, pd->regulator[3]);
+		/* Regulator ctrl 4 */
+		MIPI_OUTP((ctrl_pdata->phy_regulator_io.base)
+				+ 0x10, pd->regulator[4]);
+		/* LDO ctrl */
+		MIPI_OUTP((ctrl_pdata->phy_io.base) + 0x1dc, 0x00);
+		/* Regulator ctrl 0 */
+		MIPI_OUTP(ctrl_pdata->phy_regulator_io.base,
+				5);
+	#else
+				/* Regulator ctrl 1 */
 		MIPI_OUTP((ctrl_pdata->phy_regulator_io.base)
 				+ 0x4, pd->regulator[1]);
 		/* Regulator ctrl 2 */
@@ -203,6 +222,7 @@ static void mdss_dsi_28nm_phy_regulator_enable(
 		/* Regulator ctrl 0 */
 		MIPI_OUTP(ctrl_pdata->phy_regulator_io.base,
 				pd->regulator[0]);
+	#endif
 	}
 }
 

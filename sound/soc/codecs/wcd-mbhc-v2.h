@@ -427,6 +427,11 @@ struct wcd_mbhc {
 	struct completion btn_press_compl;
 	struct mutex hphl_pa_lock;
 	struct mutex hphr_pa_lock;
+/**ZTE_MODIFY  2016-03-25, Fake button press while inserting headset*/
+	bool reject_btn;
+	struct workqueue_struct *btn_workqueue;
+	struct delayed_work btn_work;
+/*ZTE_MODIFY_END*/
 
 	unsigned long intr_status;
 };

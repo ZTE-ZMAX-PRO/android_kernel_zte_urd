@@ -29,22 +29,33 @@
 		sdhc1 = &sdhc_1; /* SDC1 eMMC slot */
 		sdhc2 = &sdhc_2; /* SDC2 SD card slot */
 		spi0 = &spi_0;
+		spi7 = &spi_7;
 		i2c2 = &i2c_2;
 		i2c5 = &i2c_5;
 		i2c8 = &i2c_8;
 		i2c3 = &i2c_3;
+		i2c7 = &i2c_7;
 		qup10 = &test_pacman;
+		spi6 = &spi_6;  /*spi6 now used for fp */
 	};
 
 	memory {
 		#address-cells = <2>;
 		#size-cells = <2>;
+		
+            other_ext_mem: other_ext_region@0 {
+			linux,reserve-contiguous-region;
+			linux,reserve-region;
+			linux,remove-completely;
+			reg = <0x0 0x85e00000 0x0 0xa00000>;
+			label = "other_ext_mem";
+		};
 
 		modem_mem: modem_region@0 {
 			linux,reserve-contiguous-region;
 			linux,reserve-region;
 			linux,remove-completely;
-			reg = <0x0 0x86800000 0x0 0x4a00000>;
+			reg = <0x0 0x86800000 0x0 0x5e00000>;
 			label = "modem_mem";
 		};
 
@@ -54,14 +65,6 @@
 			linux,remove-completely;
 			reg = <0x0 0x8c600000 0x0 0x1700000>;
 			label = "reloc_mem";
-		};
-
-		other_ext_mem: other_ext_region@0 {
-			linux,reserve-contiguous-region;
-			linux,reserve-region;
-			linux,remove-completely;
-			reg = <0x0 0x85e00000 0x0 0xa00000>;
-			label = "other_ext_mem";
 		};
 
 		venus_mem: venus_region@0 {
@@ -95,6 +98,15 @@
                         reg = <0 0 0 0x400000>;
                         label = "adsp_mem";
                 };
+
+           ram_console_reserve: ram_console_reserve_mem_region@0 {
+                        linux,reserve-contiguous-region;
+                        linux,reserve-region;
+                        linux,remove-completely;
+                        reg = <0 0x9FF00000 0 0x100000>;
+                        label = "ram_console_reserve";
+                };
+
 	};
 
 	aliases {
@@ -754,9 +766,9 @@
 		qcom,msm-bus,num-cases = <3>;
 		qcom,msm-bus,num-paths = <1>;
 		qcom,msm-bus,vectors-KBps =
-		<90 512 0 0>,              /* No vote (ab=0 Mbps, ib=0 Mbps – NO BIMC vote) */
-		<90 512 100000 800000>,    /* SVS  - (ab=100Mbps, ib=800Mbps – 50MHz BIMC freq) */
-		<90 512 100000 1200000>;   /* PERF - (ab=100Mbps, ib=1200Mbps – 75MHz BIMC freq) */
+		<90 512 0 0>,              /* No vote (ab=0 Mbps, ib=0 Mbps ?NO BIMC vote) */
+		<90 512 100000 800000>,    /* SVS  - (ab=100Mbps, ib=800Mbps ?50MHz BIMC freq) */
+		<90 512 100000 1200000>;   /* PERF - (ab=100Mbps, ib=1200Mbps ?75MHz BIMC freq) */
 		qcom,bus-vector-names = "MIN", "SVS", "PERF";
 		qcom,tethered-flow-control;
 	};
@@ -872,6 +884,33 @@
 			compatible = "qcom,msm-imem-mem_dump_table";
 			reg = <0x10 8>;
 		};
+		pm_count_time@58 {
+           compatible = "qcom,msm-imem-pm-count-time";
+		   reg = <0x58 24>;
+        };
+		sd_dump_mode@74 {
+			compatible = "qcom,msm-imem-sd_dump_mode";
+			reg = <0x74 4>;
+		};
+		
+		sdlog_mem_phys_addr@9c {
+			compatible = "qcom,msm-imem-sdlog_mem_phys_addr";
+			reg = <0x9c 4>;
+		};
+
+		sdlog_mem_size@a0 {
+			compatible = "qcom,msm-imem-sdlog_mem_size";
+			reg = <0xa0 4>;
+		};
+		pm_parameter@a4 {
+			compatible = "qcom,msm-imem-pm_parameter";
+			reg = <0xa4 4>;
+		};
+
+                zte_sw_ver@ac {
+                        compatible = "qcom,msm-imem-zte_sw_ver";
+                        reg = <0xac 4>;
+                };
 
 		restart_reason@65c {
 			compatible = "qcom,msm-imem-restart_reason";
@@ -1513,6 +1552,53 @@
 		status = "disabled";
 	};
 
+	spi_7: spi@7af7000 { /* BLSP2 QUP2 */
+		compatible = "qcom,spi-qup-v2";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg-names = "spi_physical", "spi_bam_physical";
+		reg = <0x7af7000 0x600>,
+		      <0x7ac4000 0x1f000>;
+		interrupt-names = "spi_irq", "spi_bam_irq";
+		interrupts = <0 301 0>, <0 239 0>;
+		spi-max-frequency = <9600000>;
+		pinctrl-names = "spi_default", "spi_sleep";
+		pinctrl-0 = <&spi7_data_active &spi7_ctl_active>;
+		pinctrl-1 = <&spi7_data_suspend &spi7_ctl_suspend>;
+		clocks = <&clock_gcc clk_gcc_blsp2_ahb_clk>,
+			 <&clock_gcc clk_gcc_blsp2_qup3_spi_apps_clk>;
+		clock-names = "iface_clk", "core_clk";
+		qcom,infinite-mode = <0>;
+		qcom,use-bam;
+		qcom,use-pinctrl;
+		qcom,ver-reg-exists;
+		qcom,bam-consumer-pipe-index = <8>;
+		qcom,bam-producer-pipe-index = <9>;
+		qcom,master-id = <84>;
+		status = "disabled";
+	};
+
+/*add by stone 2015-08-21 start */
+      spi_6: spi@7af6000 { /* BLSP2 QUP1 */
+                compatible = "qcom,spi-qup-v2";
+                #address-cells = <1>;
+                #size-cells = <0>;
+                reg-names = "spi_physical";
+                reg = <0x7af6000 0x600>;
+                interrupt-names = "spi_irq";
+                interrupts = <0 300 0>;
+                spi-max-frequency = <19200000>;
+
+                qcom,master-id = <84>;
+                qcom,use-pinctrl;
+
+                clock-names = "iface_clk", "core_clk";
+                clocks = <&clock_gcc clk_gcc_blsp2_ahb_clk>,
+                         <&clock_gcc clk_gcc_blsp2_qup2_spi_apps_clk>;
+                qcom,shared;         
+        };	
+/*add by stone 2015-08-21 end */	
+
 	qcom,msm-ssc-sensors {
 		compatible = "qcom,msm-ssc-sensors";
 	};
@@ -1599,7 +1685,7 @@
 		qcom,ce-opp-freq = <100000000>;
 	};
 
-	qcom_seecom: qseecom@85e00000 {
+	qcom_seecom: qseecom@85e00000{
 		compatible = "qcom,qseecom";
 		reg = <0x85e00000 0x500000>;
 		reg-names = "secapp-region";
@@ -2003,6 +2089,31 @@
 		qcom,master-id = <84>;
 		dmas = <&dma_blsp2 4 64 0x20000020 0x20>,
 			<&dma_blsp2 5 32 0x20000020 0x20>;
+		dma-names = "tx", "rx";
+	};
+
+	i2c_7: i2c@7af7000 { /* BLSP2 QUP2 */
+		compatible = "qcom,i2c-msm-v2";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg-names = "qup_phys_addr";
+		reg = <0x7af7000 0x600>;
+		interrupt-names = "qup_irq";
+		interrupts = <0 301 0>;
+		qcom,clk-freq-out = <400000>;
+		qcom,clk-freq-in  = <19200000>;
+		clock-names = "iface_clk", "core_clk";
+		clocks = <&clock_gcc clk_gcc_blsp2_ahb_clk>,
+			 <&clock_gcc clk_gcc_blsp2_qup3_i2c_apps_clk>;
+
+		pinctrl-names = "i2c_active", "i2c_sleep";
+		pinctrl-0 = <&i2c_7_active>;
+		pinctrl-1 = <&i2c_7_sleep>;
+		qcom,noise-rjct-scl = <0>;
+		qcom,noise-rjct-sda = <0>;
+		qcom,master-id = <84>;
+		dmas = <&dma_blsp2 8 64 0x20000020 0x20>,
+			<&dma_blsp2 9 32 0x20000020 0x20>;
 		dma-names = "tx", "rx";
 	};
 
@@ -2500,4 +2611,3 @@
 		qcom,dig-cdc-base-addr = <0xc0f0000>;
 	};
 };
-

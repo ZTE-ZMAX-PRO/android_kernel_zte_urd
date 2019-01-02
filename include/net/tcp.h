@@ -613,6 +613,7 @@ extern int tcp_mss_to_mtu(struct sock *sk, int mss);
 extern void tcp_mtup_init(struct sock *sk);
 extern void tcp_valid_rtt_meas(struct sock *sk, u32 seq_rtt);
 extern void tcp_init_buffer_space(struct sock *sk);
+extern size_t print_time(struct timespec ts, char *buf);   //ZTE_LC_TCP_DEBUG, 20151230
 
 static inline void tcp_bound_rto(const struct sock *sk)
 {

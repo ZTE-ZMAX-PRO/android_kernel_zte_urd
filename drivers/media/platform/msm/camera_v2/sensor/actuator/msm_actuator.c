@@ -19,6 +19,12 @@
 
 DEFINE_MSM_MUTEX(msm_actuator_mutex);
 
+/* add debug info for HWD */
+#ifdef CONFIG_BOARD_GEVJON
+#define MSM_ACTUATOR_DEBUG
+#endif
+/* it should be remove later */
+
 #undef CDBG
 #ifdef MSM_ACTUATOR_DEBUG
 #define CDBG(fmt, args...) pr_err(fmt, ##args)
@@ -90,6 +96,16 @@ static void msm_actuator_parse_i2c_params(struct msm_actuator_ctrl_t *a_ctrl,
 	uint32_t size = a_ctrl->reg_tbl_size, i = 0;
 	struct msm_camera_i2c_reg_array *i2c_tbl = a_ctrl->i2c_reg_tbl;
 	CDBG("Enter\n");
+/*
+  * by ZTE_YCM_20151102 yi.changming 400032
+  */
+// --->	
+	if(i2c_tbl == NULL){
+	    pr_err("%s: i2c_tbl is NULL , return\n",__func__);
+           return;
+	}
+// <---400032
+
 	for (i = 0; i < size; i++) {
 		/* check that the index into i2c_tbl cannot grow larger that
 		the allocated size of i2c_tbl */
@@ -531,6 +547,59 @@ static int32_t msm_actuator_piezo_move_focus(
 	a_ctrl->i2c_tbl_index = 0;
 	a_ctrl->curr_step_pos = dest_step_position;
 	CDBG("Exit\n");
+	return rc;
+}
+
+static int32_t msm_actuator_hvcm_move_focus(
+	struct msm_actuator_ctrl_t *a_ctrl,
+	struct msm_actuator_move_params_t *move_params)
+{
+	int32_t rc = 0;
+	uint16_t wait_time = 0;
+	int32_t dest_step_position = move_params->dest_step_pos;
+	struct damping_params_t *damping_params =
+		&move_params->ringing_params[0];
+	uint16_t curr_lens_pos =
+		a_ctrl->step_position_table[a_ctrl->curr_step_pos];
+	int16_t target_lens_pos =
+		a_ctrl->step_position_table[dest_step_position];
+	uint8_t lsb;
+	uint8_t msb;
+	CDBG("%s Enter %d\n", __func__, __LINE__);
+	wait_time = damping_params->damping_delay;
+
+	pr_err("%s curr_lens_pos=%d dest_lens_pos=%d\n", __func__,
+		curr_lens_pos, target_lens_pos);
+	pr_err("%s curr_step_pos=%d dest_step_position=%d\n", __func__,
+		a_ctrl->curr_step_pos, dest_step_position);
+
+	if (curr_lens_pos != target_lens_pos) {
+		msb = target_lens_pos >> 1;
+		lsb = (target_lens_pos << 8) >> 1;
+		CDBG("%s, msb 0x%x, lsb 0x%x\n", __func__, msb, lsb);
+
+		rc = a_ctrl->i2c_client.i2c_func_tbl->i2c_write(
+			&a_ctrl->i2c_client, 0x00, msb,
+			MSM_CAMERA_I2C_BYTE_DATA);
+		if (rc < 0) {
+			pr_err("%s Failed I2C write Line %d\n", __func__,
+				__LINE__);
+			return rc;
+		}
+
+		rc = a_ctrl->i2c_client.i2c_func_tbl->i2c_write(
+			&a_ctrl->i2c_client, 0x01, lsb,
+			MSM_CAMERA_I2C_BYTE_DATA);
+		if (rc < 0) {
+			pr_err("%s Failed I2C write Line %d\n", __func__,
+				__LINE__);
+			return rc;
+		}
+		usleep_range(wait_time, wait_time + 1000);
+	}
+       move_params->curr_lens_pos = target_lens_pos;
+	a_ctrl->curr_step_pos = dest_step_position;
+	CDBG("%s exit %d\n", __func__, __LINE__);
 	return rc;
 }
 
@@ -1102,7 +1171,12 @@ static int32_t msm_actuator_set_position(
 			set_pos->number_of_steps);
 		return -EFAULT;
 	}
-
+/*
+  * by ZTE_YCM_20151102 yi.changming 400045
+  */
+// --->	
+	hw_params = set_pos->hw_params;
+// <---400045
 	a_ctrl->i2c_tbl_index = 0;
 	for (index = 0; index < set_pos->number_of_steps; index++) {
 		next_lens_position = set_pos->pos[index];
@@ -1981,8 +2055,8 @@ static struct msm_actuator msm_hvcm_actuator_table = {
 	.act_type = ACTUATOR_HVCM,
 	.func_tbl = {
 		.actuator_init_step_table = msm_actuator_init_step_table,
-		.actuator_move_focus = msm_actuator_move_focus,
-		.actuator_write_focus = msm_actuator_write_focus,
+		.actuator_move_focus = msm_actuator_hvcm_move_focus,
+		.actuator_write_focus = NULL,
 		.actuator_set_default_focus = msm_actuator_set_default_focus,
 		.actuator_init_focus = msm_actuator_init_focus,
 		.actuator_parse_i2c_params = msm_actuator_parse_i2c_params,

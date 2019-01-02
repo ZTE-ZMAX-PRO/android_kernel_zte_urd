@@ -317,7 +317,8 @@ struct qpnp_hap {
 	u8 lra_res_cal_period;
 	u8 sc_duration;
 	u8 ext_pwm_dtest_line;
-	bool state;
+	//bool state;
+	u32 state;
 	bool use_play_irq;
 	bool use_sc_irq;
 	bool wf_update;
@@ -328,6 +329,9 @@ struct qpnp_hap {
 	bool correct_lra_drive_freq;
 	bool misc_trim_error_rc19p2_clk_reg_present;
 };
+
+//export from zte_misc.c
+extern bool is_haptics_zte(void);
 
 static struct qpnp_hap *ghap;
 
@@ -1468,7 +1472,7 @@ static void correct_auto_res_error(struct work_struct *auto_res_err_work)
 		schedule_work(&hap->work);
 	}
 }
-
+#define BLUECOM_HAP_VMAX_MV		2900
 /* set api for haptics */
 static int qpnp_hap_set(struct qpnp_hap *hap, int on)
 {
@@ -1484,6 +1488,16 @@ static int qpnp_hap_set(struct qpnp_hap *hap, int on)
 	} else if (hap->play_mode == QPNP_HAP_BUFFER ||
 			hap->play_mode == QPNP_HAP_DIRECT) {
 		if (on) {
+			if (is_haptics_zte()) {//zte add
+				u32 max_mv = BLUECOM_HAP_VMAX_MV;
+				val = ((on & 0xFF0000)>>16);
+				max_mv = val * QPNP_HAP_VMAX_MIN_MV;
+				if (val > BLUECOM_HAP_VMAX_MV/QPNP_HAP_VMAX_MIN_MV)
+						max_mv = BLUECOM_HAP_VMAX_MV;
+				hap->vmax_mv = max_mv;
+				rc = qpnp_hap_vmax_config(hap);
+				//printk(KERN_ERR"%s: set hap voltage %d\n", __func__, max_mv);
+			}
 			rc = qpnp_hap_mod_enable(hap, on);
 			if (rc < 0)
 				return rc;
@@ -1543,6 +1557,11 @@ static void qpnp_hap_td_enable(struct timed_output_dev *dev, int value)
 					 timed_dev);
 
 	mutex_lock(&hap->lock);
+
+	if (hap->act_type == QPNP_HAP_LRA &&
+				hap->correct_lra_drive_freq)
+		hrtimer_cancel(&hap->auto_res_err_poll_timer);
+
 	hrtimer_cancel(&hap->hap_timer);
 
 	if (value == 0) {
@@ -1552,12 +1571,29 @@ static void qpnp_hap_td_enable(struct timed_output_dev *dev, int value)
 		}
 		hap->state = 0;
 	} else {
-		value = (value > hap->timeout_ms ?
-				 hap->timeout_ms : value);
-		hap->state = 1;
-		hrtimer_start(&hap->hap_timer,
-			      ktime_set(value / 1000, (value % 1000) * 1000000),
-			      HRTIMER_MODE_REL);
+		if (is_haptics_zte()) {
+			int vtg_value, timeout_value;
+
+			//printk(KERN_ERR"%s: value is %d, 0x%x\n", __func__, value, value);
+			vtg_value = value & 0xFF0000;
+			timeout_value = value & 0xFFFF;
+			if (vtg_value == 0 )
+				vtg_value = 0xF0000;/* 0xF: default value 0xF*116=1740mv */
+			timeout_value = ( timeout_value > hap->timeout_ms ?
+			hap->timeout_ms : timeout_value);
+			hap->state = 1 | vtg_value;
+
+			hrtimer_start(&hap->hap_timer,
+				  ktime_set(timeout_value / 1000, (timeout_value % 1000) * 1000000),
+				  HRTIMER_MODE_REL);
+		} else {
+			value = (value > hap->timeout_ms ?
+					 hap->timeout_ms : value);
+			hap->state = 1;
+			hrtimer_start(&hap->hap_timer,
+					  ktime_set(value / 1000, (value % 1000) * 1000000),
+					  HRTIMER_MODE_REL);
+		}
 	}
 	mutex_unlock(&hap->lock);
 	schedule_work(&hap->work);
@@ -2182,6 +2218,15 @@ static int qpnp_haptic_probe(struct spmi_device *spmi)
 	if (rc) {
 		dev_err(&spmi->dev, "DT parsing failed\n");
 		return rc;
+	}
+
+	pr_info("Haptics: sw:act_type=%s hw:is_haptics=%d(%s)\n", (hap->act_type==QPNP_HAP_LRA)?"LRA":"ERM", is_haptics_zte(), is_haptics_zte()?"LRA":"ERM");
+	if ((hap->act_type != QPNP_HAP_LRA) && (is_haptics_zte())) {
+		pr_info("Haptics: found LRA hw, but sw not support LRA, act_type=%s\n", (hap->act_type==QPNP_HAP_LRA)?"LRA":"ERM");
+		return -EINVAL;
+	} else if ((hap->act_type == QPNP_HAP_LRA) && (!is_haptics_zte())) {
+		pr_info("Haptics: found ERM hw, but sw not support ERM, act_type=%s\n", (hap->act_type==QPNP_HAP_LRA)?"LRA":"ERM");
+		return -EINVAL;
 	}
 
 	rc = qpnp_hap_config(hap);

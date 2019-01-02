@@ -43,6 +43,16 @@ struct msm_eeprom_ctrl_t {
 	struct msm_camera_i2c_client i2c_client;
 	struct msm_eeprom_board_info *eboard_info;
 	uint32_t subdev_id;
+/*
+  * camera sensor module compatile
+  * 
+  * by ZTE_YCM_20140728 yi.changming 000028
+  */
+// --->
+	const char *sensor_module_name;
+	const char *chromtix_lib_name;
+	const char *default_chromtix_lib_name;
+// <---
 	int32_t userspace_probe;
 	struct msm_eeprom_memory_block_t cal_data;
 	uint8_t is_supported;

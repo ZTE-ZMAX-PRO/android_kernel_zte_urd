@@ -1106,7 +1106,7 @@ struct usb_function *gser_alloc(struct usb_function_instance *fi)
 	else if (opts->port_num == 1)
 		gser->port.func.name = "nmea";
 	else
-		gser->port.func.name = "modem2";
+		gser->port.func.name = "at";
 	gser->port.func.setup = gser_setup;
 	gser->port.connect = gser_connect;
 	gser->port.get_dtr = gser_get_dtr;

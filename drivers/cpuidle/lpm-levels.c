@@ -234,8 +234,13 @@ void lpm_cluster_mode_enable(void)
 			return;
 		for (i = 0; i < n->nlevels; i++) {
 			struct lpm_level_avail *l = &n->levels[i].available;
-
+#if 1 /* 02771078 Kernel BUG | dec_hmp_sched_stats_rt+0x40/0x48 | na | once several weeks, part1 */
+			if (i != 1) { /* skip 1=L2-GDHS enable, 0 for l2-wfi, 2 for l2-pc */
+#endif
 			l->idle_enabled = 1;
+#if 1 /* 02771078 Kernel BUG | dec_hmp_sched_stats_rt+0x40/0x48 | na | once several weeks, part2 */
+			}
+#endif
 		}
 	}
 }
@@ -866,6 +871,8 @@ bool psci_enter_sleep(struct lpm_cluster *cluster, int idx, bool from_idle)
 	return false;
 }
 #endif
+extern bool zte_msm_cpu_pm_enter_sleep(enum msm_pm_sleep_mode mode, bool from_idle);
+extern void zte_pm_before_powercollapse(void);
 
 static int lpm_cpuidle_enter(struct cpuidle_device *dev,
 		struct cpuidle_driver *drv, int index)
@@ -902,8 +909,7 @@ static int lpm_cpuidle_enter(struct cpuidle_device *dev,
 		update_debug_pc_event(CPU_ENTER, idx, 0xdeaffeed,
 			gic_return_irq_pending(), true);
 	if (!use_psci)
-		success = msm_cpu_pm_enter_sleep(cluster->cpu->levels[idx].mode,
-				true);
+	success = zte_msm_cpu_pm_enter_sleep(cluster->cpu->levels[idx].mode, true);
 	else
 		success = psci_enter_sleep(cluster, idx, true);
 
@@ -1134,9 +1140,12 @@ static int lpm_suspend_enter(suspend_state_t state)
 	clock_debug_print_enabled();
 
 	if (!use_psci)
-		msm_cpu_pm_enter_sleep(cluster->cpu->levels[idx].mode, false);
+	zte_msm_cpu_pm_enter_sleep(cluster->cpu->levels[idx].mode, false);
 	else
-		psci_enter_sleep(cluster, idx, true);
+    {   
+        zte_pm_before_powercollapse();
+        psci_enter_sleep(cluster, idx, true);
+    }
 
 	if (idx > 0)
 		update_debug_pc_event(CPU_EXIT, idx, true, 0xdeaffeed,
@@ -1159,10 +1168,12 @@ static int lpm_probe(struct platform_device *pdev)
 	int size;
 	struct kobject *module_kobj = NULL;
 
+	get_online_cpus();
 	lpm_root_node = lpm_of_parse_cluster(pdev);
 
 	if (IS_ERR_OR_NULL(lpm_root_node)) {
 		pr_err("%s(): Failed to probe low power modes\n", __func__);
+		put_online_cpus();
 		return PTR_ERR(lpm_root_node);
 	}
 
@@ -1175,7 +1186,6 @@ static int lpm_probe(struct platform_device *pdev)
 	 * core.  BUG in existing code but no known issues possibly because of
 	 * how late lpm_levels gets initialized.
 	 */
-	register_hotcpu_notifier(&lpm_cpu_nblk);
 	get_cpu();
 	on_each_cpu(setup_broadcast_timer, (void *)true, 1);
 	put_cpu();
@@ -1186,6 +1196,7 @@ static int lpm_probe(struct platform_device *pdev)
 	if (ret) {
 		pr_err("%s: Failed initializing scm_handoff_lock (%d)\n",
 			__func__, ret);
+		put_online_cpus();
 		return ret;
 	}
 
@@ -1195,12 +1206,13 @@ static int lpm_probe(struct platform_device *pdev)
 	register_cluster_lpm_stats(lpm_root_node, NULL);
 
 	ret = cluster_cpuidle_register(lpm_root_node);
+	put_online_cpus();
 	if (ret) {
 		pr_err("%s()Failed to register with cpuidle framework\n",
 				__func__);
 		goto failed;
 	}
-
+	register_hotcpu_notifier(&lpm_cpu_nblk);
 	module_kobj = kset_find_obj(module_kset, KBUILD_MODNAME);
 	if (!module_kobj) {
 		pr_err("%s: cannot find kobject for module %s\n",

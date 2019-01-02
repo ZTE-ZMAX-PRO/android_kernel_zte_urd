@@ -29,6 +29,8 @@
 #include "pil-q6v5.h"
 #include "pil-msa.h"
 
+#include <linux/reboot.h>
+
 /* Q6 Register Offsets */
 #define QDSP6SS_RST_EVB			0x010
 #define QDSP6SS_DBG_CFG			0x018
@@ -476,8 +478,13 @@ static int pil_mss_reset(struct pil_desc *pil)
 	/* Wait for MBA to start. Check for PBL and MBA errors while waiting. */
 	if (drv->self_auth) {
 		ret = pil_msa_wait_for_mba_ready(drv);
-		if (ret)
+		if (ret) {
+#ifdef CONFIG_ZTE_PIL_AUTH_ERROR_DETECTION
+			kernel_restart("unauth");
+#endif
+
 			goto err_q6v5_reset;
+		}
 	}
 
 	dev_info(pil->dev, "MBA boot done\n");
@@ -548,6 +555,12 @@ int pil_mss_reset_load_mba(struct pil_desc *pil)
 		goto err_mba_data;
 	}
 	count = fw->size;
+	if (count > SZ_1M) {
+		dev_err(pil->dev, "%s fw image loading into memory is failed due to fw size overflow\n",
+			__func__);
+		ret = -EINVAL;
+		goto err_mba_data;
+	}
 	memcpy(mba_virt, data, count);
 	wmb();
 

@@ -65,6 +65,12 @@ static int msm_pri_mi2s_rx_ch = 1;
 static int msm_proxy_rx_ch = 2;
 static int msm_vi_feed_tx_ch = 2;
 static int mi2s_rx_bit_format = SNDRV_PCM_FORMAT_S16_LE;
+#if defined(CONFIG_BOARD_JASMINE)||defined(CONFIG_BOARD_GEVJON)
+//static int msm8952_spk_control = 1;
+static int ext_spk_amp_gpio = -1;
+static int msm8952_hds_control = 1;
+int ext_hds_amp_gpio = -1;
+#endif
 
 static atomic_t quat_mi2s_clk_ref;
 static atomic_t quin_mi2s_clk_ref;
@@ -79,6 +85,9 @@ static int msm8952_wsa_switch_event(struct snd_soc_dapm_widget *w,
 			      struct snd_kcontrol *kcontrol, int event);
 static int msm8952_ext_audio_switch_event(struct snd_soc_dapm_widget *w,
 			      struct snd_kcontrol *kcontrol, int event);
+#if defined(CONFIG_BOARD_JASMINE)||defined(CONFIG_BOARD_GEVJON)
+static void msm8952_enable_ext_spk_power_amp(u32 on);
+#endif
 
 /*
  * Android L spec
@@ -93,7 +102,7 @@ static struct wcd_mbhc_config mbhc_cfg = {
 	.swap_gnd_mic = NULL,
 	.hs_ext_micbias = false,
 	.key_code[0] = KEY_MEDIA,
-	.key_code[1] = KEY_VOICECOMMAND,
+	.key_code[1] = KEY_VOLUMEUP, //KEY_VOICECOMMAND
 	.key_code[2] = KEY_VOLUMEUP,
 	.key_code[3] = KEY_VOLUMEDOWN,
 	.key_code[4] = 0,
@@ -139,6 +148,10 @@ static const char *const loopback_mclk_text[] = {"DISABLE", "ENABLE"};
 static const char *const proxy_rx_ch_text[] = {"One", "Two", "Three", "Four",
 	"Five", "Six", "Seven", "Eight"};
 static const char *const vi_feed_ch_text[] = {"One", "Two"};
+#if defined(CONFIG_BOARD_JASMINE)||defined(CONFIG_BOARD_GEVJON)
+//static const char *const ext_spk_text[] = {"Off", "On"};
+static const char *const ext_hds_text[] = {"Off", "On"};
+#endif
 
 static inline int param_is_mask(int p)
 {
@@ -163,6 +176,20 @@ static void param_set_mask(struct snd_pcm_hw_params *p, int n, unsigned bit)
 	}
 }
 
+#if defined(CONFIG_BOARD_JASMINE)||defined(CONFIG_BOARD_GEVJON)
+static int msm_ext_spkramp_event(struct snd_soc_dapm_widget *w,
+			     struct snd_kcontrol *k, int event)
+{
+	pr_err("%s() enter msm8952_hds_control( %d )\n", __func__,msm8952_hds_control);
+	if (SND_SOC_DAPM_EVENT_ON(event) && (msm8952_hds_control != 1)) {
+		msm8952_enable_ext_spk_power_amp(1);
+	}else{
+		msm8952_enable_ext_spk_power_amp(0);
+	}
+	return 0;
+}
+#endif
+
 static const struct snd_soc_dapm_widget msm8952_dapm_widgets[] = {
 
 	SND_SOC_DAPM_SUPPLY_S("MCLK", -1, SND_SOC_NOPM, 0, 0,
@@ -172,6 +199,9 @@ static const struct snd_soc_dapm_widget msm8952_dapm_widgets[] = {
 	SND_SOC_DAPM_MIC("Secondary Mic", NULL),
 	SND_SOC_DAPM_MIC("Digital Mic1", NULL),
 	SND_SOC_DAPM_MIC("Digital Mic2", NULL),
+#if defined(CONFIG_BOARD_JASMINE)||defined(CONFIG_BOARD_GEVJON)
+	SND_SOC_DAPM_SPK("Lineout_hph amp", msm_ext_spkramp_event),
+#endif
 	SND_SOC_DAPM_SUPPLY("VDD_WSA_SWITCH", SND_SOC_NOPM, 0, 0,
 	msm8952_wsa_switch_event,
 	SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
@@ -202,6 +232,97 @@ int is_ext_spk_gpio_support(struct platform_device *pdev,
 	}
 	return 0;
 }
+
+#if defined(CONFIG_BOARD_JASMINE)||defined(CONFIG_BOARD_GEVJON)
+// ZTE_ZJB_config_gpio91 start
+static int msm8952_ext_spk_power_amp_init(struct platform_device *pdev,
+			struct msm8916_asoc_mach_data *pdata)
+{
+	int ret = 0;
+	ext_spk_amp_gpio = of_get_named_gpio(pdev->dev.of_node,
+		"qcom,ext-spk-amp-gpio", 0);
+	pr_debug("%s: zhujb external speaker gpio: %d",__func__, ext_spk_amp_gpio);
+	if (ext_spk_amp_gpio >= 0) {
+		ret = gpio_request(ext_spk_amp_gpio, "ext_spk_amp_gpio");
+		if (ret) {
+			pr_err("%s: gpio_request failed for ext_spk_amp_gpio.\n",
+				__func__);
+			return -EINVAL;
+		}
+		gpio_direction_output(ext_spk_amp_gpio, 0);
+	}
+	return 0;
+}
+
+static void msm8952_enable_ext_spk_power_amp(u32 on)
+{
+	if (on) {
+		/*select mode 6*/
+		gpio_direction_output(ext_spk_amp_gpio, 1);
+		udelay(1);
+		gpio_direction_output(ext_spk_amp_gpio, 0);
+		udelay(1);
+		gpio_direction_output(ext_spk_amp_gpio, 1);
+		udelay(1);
+		gpio_direction_output(ext_spk_amp_gpio, 0);
+		udelay(1);
+		gpio_direction_output(ext_spk_amp_gpio, 1);
+		udelay(1);
+		gpio_direction_output(ext_spk_amp_gpio, 0);
+		udelay(1);
+		gpio_direction_output(ext_spk_amp_gpio, 1);
+		udelay(1);
+		gpio_direction_output(ext_spk_amp_gpio, 0);
+		udelay(1);
+		gpio_direction_output(ext_spk_amp_gpio, 1);
+		udelay(1);
+		gpio_direction_output(ext_spk_amp_gpio, 0);
+		udelay(1);
+		gpio_direction_output(ext_spk_amp_gpio, 1);
+	} else {
+		gpio_direction_output(ext_spk_amp_gpio, on);
+		usleep_range(2000,3000);
+	}
+	pr_err("%s: %s external speaker PAs.\n", __func__,
+			on ? "Enable" : "Disable");
+}
+// ZTE_ZJB_config_gpio91 end
+#endif
+
+#if defined(CONFIG_BOARD_JASMINE)||defined(CONFIG_BOARD_GEVJON)
+// ZTE_ZJB_config_gpio63 start
+static int msm8952_ext_hds_power_amp_init(struct platform_device *pdev,
+			struct msm8916_asoc_mach_data *pdata)
+{
+	int ret = 0;
+	ext_hds_amp_gpio = of_get_named_gpio(pdev->dev.of_node,
+		"qcom,ext-headset-amp-gpio", 0);
+	pr_debug("%s: zhujb external headset gpio: %d",__func__, ext_hds_amp_gpio);
+	if (ext_hds_amp_gpio >= 0) {
+		ret = gpio_request(ext_hds_amp_gpio, "ext_spk_amp_gpio");
+		if (ret) {
+			pr_err("%s: gpio_request failed for ext_spk_amp_gpio.\n",
+				__func__);
+			return -EINVAL;
+		}
+		gpio_direction_output(ext_hds_amp_gpio, 0);
+	}
+	return 0;
+}
+
+static void msm8952_enable_ext_hds_power_amp(u32 on)
+{
+	if (on) {
+		gpio_direction_output(ext_hds_amp_gpio, 1);
+		udelay(200);
+	} else {
+		gpio_direction_output(ext_hds_amp_gpio, 0);
+        udelay(200);
+	}
+	pr_err("%s: %s headset PAs.\n", __func__,on ? "Enable" : "Disable");
+}
+// ZTE_ZJB_config_gpio63 end
+#endif
 
 static int ext_audio_switch_support(struct platform_device *pdev,
 			struct msm8916_asoc_mach_data *pdata)
@@ -954,6 +1075,91 @@ static int msm_vi_feed_tx_ch_put(struct snd_kcontrol *kcontrol,
 	return 1;
 }
 
+#if 0//defined(CONFIG_BOARD_JASMINE)
+// ZTE_ZJB_config_gpio91 start
+static int spk_amp_get(struct snd_kcontrol *kcontrol,
+		       struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s: zhujb:spk_amp_get msm8952_spk_control(%d)\n",
+			 __func__, msm8952_spk_control);
+	ucontrol->value.integer.value[0] = msm8952_spk_control;
+	return 0;
+}
+
+static int spk_amp_put(struct snd_kcontrol *kcontrol,
+		       struct snd_ctl_elem_value *ucontrol)
+{
+	int ret;
+
+	pr_debug("%s:zhujb spk_amp_put msm8952_spk_control(%d), put val(%ld)\n",
+			 __func__, msm8952_spk_control, ucontrol->value.integer.value[0]);
+
+	if (msm8952_spk_control == ucontrol->value.integer.value[0])
+		return 0;
+
+	msm8952_spk_control = ucontrol->value.integer.value[0];
+
+	if (msm8952_spk_control)
+	{
+		msm8952_enable_ext_spk_power_amp(1);
+		if (ret < 0)
+		    pr_err("%s:A80 gpio91 set cannot be activated %s\n",
+				 __func__, "spk_amp_gpio");
+	}
+	else
+	{
+		msm8952_enable_ext_spk_power_amp(0);
+		if (ret < 0)
+		    pr_err("%s:A80 gpio91 set cannot be de-activated %s\n",
+				 __func__, "spk_amp_gpio");
+	}
+	return 1;
+}
+// ZTE_ZJB_config_gpio91 end
+#endif
+
+#if defined(CONFIG_BOARD_JASMINE)||defined(CONFIG_BOARD_GEVJON)
+// ZTE_ZJB_config_gpio63 start
+static int hds_amp_get(struct snd_kcontrol *kcontrol,
+		       struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s: zhujb:hds_amp_get msm8952_hds_control(%d)\n",
+			 __func__, msm8952_hds_control);
+	ucontrol->value.integer.value[0] = msm8952_hds_control;
+	return 0;
+}
+
+static int hds_amp_put(struct snd_kcontrol *kcontrol,
+		       struct snd_ctl_elem_value *ucontrol)
+{
+	int ret;
+
+	pr_debug("%s:zhujb hds_amp_put msm8952_hds_control(%d), put val(%ld)\n",
+			 __func__, msm8952_hds_control, ucontrol->value.integer.value[0]);
+
+	if (msm8952_hds_control == ucontrol->value.integer.value[0])
+		return 0;
+
+	msm8952_hds_control = ucontrol->value.integer.value[0];
+
+	if (msm8952_hds_control)
+	{
+		msm8952_enable_ext_hds_power_amp(1);
+		if (ret < 0)
+		    pr_err("%s:A80 gpio63 set cannot be activated %s\n",
+				 __func__, "hds_amp_gpio");
+	}
+	else
+	{
+		msm8952_enable_ext_hds_power_amp(0);
+		if (ret < 0)
+		    pr_err("%s:A80 gpio63 set cannot be de-activated %s\n",
+				 __func__, "hds_amp_gpio");
+	}
+	return 1;
+}
+// ZTE_ZJB_config_gpio63 end
+#endif
 
 static const struct soc_enum msm_snd_enum[] = {
 	SOC_ENUM_SINGLE_EXT(2, rx_bit_format_text),
@@ -961,6 +1167,10 @@ static const struct soc_enum msm_snd_enum[] = {
 	SOC_ENUM_SINGLE_EXT(2, loopback_mclk_text),
 	SOC_ENUM_SINGLE_EXT(8, proxy_rx_ch_text),
 	SOC_ENUM_SINGLE_EXT(2, vi_feed_ch_text),
+#if defined(CONFIG_BOARD_JASMINE)||defined(CONFIG_BOARD_GEVJON)
+	//SOC_ENUM_SINGLE_EXT(2, ext_spk_text),
+	SOC_ENUM_SINGLE_EXT(2, ext_hds_text),
+#endif
 };
 
 static const char *const btsco_rate_text[] = {"BTSCO_RATE_8KHZ",
@@ -984,7 +1194,12 @@ static const struct snd_kcontrol_new msm_snd_controls[] = {
 			msm_proxy_rx_ch_get, msm_proxy_rx_ch_put),
 	SOC_ENUM_EXT("VI_FEED_TX Channels", msm_snd_enum[4],
 			msm_vi_feed_tx_ch_get, msm_vi_feed_tx_ch_put),
-
+#if defined(CONFIG_BOARD_JASMINE)||defined(CONFIG_BOARD_GEVJON)
+	//SOC_ENUM_EXT("Spk Amp Switch", msm_snd_enum[5], spk_amp_get,
+	//			spk_amp_put),
+	SOC_ENUM_EXT("Hds GPIO Switch", msm_snd_enum[5], hds_amp_get,
+				hds_amp_put),
+#endif
 };
 
 static int msm8952_mclk_event(struct snd_soc_dapm_widget *w,
@@ -1560,12 +1775,12 @@ static void *def_msm8952_wcd_mbhc_cal(void)
 	 * 210-290 == Button 2
 	 * 360-680 == Button 3
 	 */
-	btn_low[0] = 75;
-	btn_high[0] = 75;
+	btn_low[0] = 100;
+	btn_high[0] = 100;
 	btn_low[1] = 150;
 	btn_high[1] = 150;
-	btn_low[2] = 225;
-	btn_high[2] = 225;
+	btn_low[2] = 200;
+	btn_high[2] = 200;
 	btn_low[3] = 450;
 	btn_high[3] = 450;
 	btn_low[4] = 500;
@@ -1604,6 +1819,9 @@ static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
 	snd_soc_dapm_ignore_suspend(dapm, "DMIC1");
 	snd_soc_dapm_ignore_suspend(dapm, "DMIC2");
 	snd_soc_dapm_ignore_suspend(dapm, "WSA_SPK OUT");
+#if defined(CONFIG_BOARD_JASMINE)||defined(CONFIG_BOARD_GEVJON)
+	snd_soc_dapm_ignore_suspend(dapm, "Lineout_hph amp");
+#endif
 
 	snd_soc_dapm_sync(dapm);
 
@@ -2242,8 +2460,13 @@ static struct snd_soc_dai_link msm8952_dai[] = {
 		.stream_name = "Quaternary MI2S Playback",
 		.cpu_dai_name = "msm-dai-q6-mi2s.3",
 		.platform_name = "msm-pcm-routing",
+#if defined(CONFIG_SND_SOC_AK4375)		
+		.codec_dai_name = "ak4375-AIF1",
+		.codec_name = "ak4375",
+#else		
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
+#endif		
 		.no_pcm = 1,
 		.be_id = MSM_BACKEND_DAI_QUATERNARY_MI2S_RX,
 		.be_hw_params_fixup = msm_be_hw_params_fixup,
@@ -2949,6 +3172,19 @@ static int msm8952_asoc_machine_probe(struct platform_device *pdev)
 		pr_debug("%s:  doesn't support external speaker pa\n",
 				__func__);
 
+#if defined(CONFIG_BOARD_JASMINE)||defined(CONFIG_BOARD_GEVJON)
+	ret = msm8952_ext_spk_power_amp_init(pdev, pdata);
+	if (ret < 0)
+		pr_debug("%s: zhujb: doesn't init external speaker pa\n",
+				__func__);
+#endif
+#if defined(CONFIG_BOARD_JASMINE)||defined(CONFIG_BOARD_GEVJON)
+		ret = msm8952_ext_hds_power_amp_init(pdev, pdata);
+		if (ret < 0)
+			pr_debug("%s: zhujb: doesn't init external speaker pa\n",
+					__func__);
+#endif
+
 	ret = ext_audio_switch_support(pdev, pdata);
 	if (ret < 0)
 		dev_dbg(&pdev->dev, "%s: doesn't require ext audio switch support\n",
@@ -3060,6 +3296,13 @@ static int msm8952_asoc_machine_remove(struct platform_device *pdev)
 		}
 		mutex_destroy(&pdata->wsa_mclk_mutex);
 	}
+
+#if defined(CONFIG_BOARD_JASMINE)||defined(CONFIG_BOARD_GEVJON)
+	if (gpio_is_valid(ext_spk_amp_gpio))
+		gpio_free(ext_spk_amp_gpio);
+	if (gpio_is_valid(ext_hds_amp_gpio))
+		gpio_free(ext_hds_amp_gpio);
+#endif
 	snd_soc_unregister_card(card);
 	mutex_destroy(&pdata->cdc_mclk_mutex);
 	return 0;
