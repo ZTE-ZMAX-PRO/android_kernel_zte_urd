@@ -1166,7 +1166,8 @@ void security_compute_av_user(u32 ssid,
 	}
 
 	context_struct_compute_av(scontext, tcontext, tclass, avd, NULL);
- out:
+
+out:
 	read_unlock(&policy_rwlock);
 	return;
 allow:

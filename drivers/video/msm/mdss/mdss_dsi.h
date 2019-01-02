@@ -393,8 +393,11 @@ struct mdss_dsi_ctrl_pdata {
 	int irq_cnt;
 	int disp_te_gpio;
 	int rst_gpio;
+	bool rst_gpio_keep_high_flag;//pan,keep reset gpio high 0620
 	int disp_en_gpio;
 	int bklt_en_gpio;
+	int lcd_3v_vsp_en_gpio;
+	int mode_gpio;
 	int lcd_mode_sel_gpio;
 	int bklt_ctrl;	/* backlight ctrl */
 	bool pwm_pmi;
@@ -544,6 +547,7 @@ int mdss_dsi_shadow_clk_init(struct platform_device *pdev,
 		      struct mdss_dsi_ctrl_pdata *ctrl_pdata);
 void mdss_dsi_shadow_clk_deinit(struct device *dev,
 			struct mdss_dsi_ctrl_pdata *ctrl_pdata);
+void mdss_dsi_panel_3v_power(struct mdss_panel_data *pdata, int enable);
 int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable);
 void mdss_dsi_phy_disable(struct mdss_dsi_ctrl_pdata *ctrl);
 void mdss_dsi_cmd_test_pattern(struct mdss_dsi_ctrl_pdata *ctrl);

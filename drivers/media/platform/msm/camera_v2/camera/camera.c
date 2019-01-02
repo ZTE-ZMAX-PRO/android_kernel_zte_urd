@@ -574,10 +574,10 @@ static int camera_v4l2_open(struct file *filep)
 				__func__, __LINE__, rc);
 		goto vb2_q_fail;
 	}
-
+	pr_err("%s : %d opn_idx = %d\n",__func__, __LINE__,opn_idx );
 	if (!atomic_read(&pvdev->opened)) {
 		pm_stay_awake(&pvdev->vdev->dev);
-
+	      pr_err("%s : %d lock pm\n",__func__, __LINE__);
 		/* Disable power collapse latency */
 		msm_pm_qos_update_request(CAMERA_DISABLE_PC_LATENCY);
 
@@ -678,7 +678,7 @@ static int camera_v4l2_close(struct file *filep)
 	mask = (1 << sp->stream_id);
 	opn_idx &= ~mask;
 	atomic_set(&pvdev->opened, opn_idx);
-
+	pr_err("%s : %d opn_idx = %d\n",__func__, __LINE__,opn_idx );
 	if (atomic_read(&pvdev->opened) == 0) {
 		mutex_lock(&session->close_lock);
 		camera_pack_event(filep, MSM_CAMERA_SET_PARM,
@@ -696,6 +696,7 @@ static int camera_v4l2_close(struct file *filep)
 		msm_destroy_session(pvdev->vdev->num);
 
 		pm_relax(&pvdev->vdev->dev);
+		pr_err("%s : %d unlock pm\n",__func__, __LINE__);
 	} else {
 		mutex_lock(&session->close_lock);
 		camera_pack_event(filep, MSM_CAMERA_SET_PARM,

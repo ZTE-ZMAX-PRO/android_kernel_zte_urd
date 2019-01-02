@@ -42,7 +42,72 @@ static struct mdss_dsi_data *mdss_dsi_res;
 #define DSI_ENABLE_PC_LATENCY PM_QOS_DEFAULT_VALUE
 
 static struct pm_qos_request mdss_dsi_pm_qos_request;
+/* start -20160505-ENABLE_LCD_MIPI_DEBUG*/
+#ifdef ENABLE_LCD_MIPI_DEBUG
+extern int parsed_new_lcd_setting_flag ;
+extern struct zte_lcd_mipi_debug lcd_mipi_debug;
 
+static int mdss_dsi_clk_refresh_zte(struct mdss_panel_data *pdata)
+{
+	struct mdss_dsi_ctrl_pdata *ctrl_pdata = NULL;
+	struct mdss_panel_info *pinfo = NULL;
+	u32 pclk_rate = 0, byte_clk_rate = 0;
+	u8 frame_rate = 0;
+	int rc = 0;
+
+	if (!pdata) {
+		pr_err("%s: invalid panel data\n", __func__);
+		return -EINVAL;
+	}
+
+	ctrl_pdata = container_of(pdata, struct mdss_dsi_ctrl_pdata,
+							panel_data);
+	pinfo = &pdata->panel_info;
+
+	if (!ctrl_pdata || !pinfo) {
+		pr_err("%s: invalid ctrl data\n", __func__);
+		return -EINVAL;
+	}
+
+	/* Back-up current values for error cases */
+	frame_rate = pinfo->mipi.frame_rate;
+	pclk_rate = ctrl_pdata->pclk_rate;
+	byte_clk_rate = ctrl_pdata->byte_clk_rate;
+	
+	rc = mdss_dsi_clk_div_config(pinfo, pinfo->mipi.frame_rate);
+	if (rc) {
+		pr_err("%s: unable to initialize clk dividers\n", __func__);
+		goto error;
+	}
+	ctrl_pdata->pclk_rate = pdata->panel_info.mipi.dsi_pclk_rate;
+	ctrl_pdata->byte_clk_rate = pdata->panel_info.clk_rate / 8;
+	printk("LCD %s ctrl_pdata->byte_clk_rate=%d ctrl_pdata->pclk_rate=%d\n",
+		__func__, ctrl_pdata->byte_clk_rate, ctrl_pdata->pclk_rate);
+
+	/* phy panel timing calaculation */
+	mdss_dsi_get_phy_revision(ctrl_pdata);
+	rc = mdss_dsi_phy_calc_timing_param(pinfo,
+		ctrl_pdata->shared_data->phy_rev, pinfo->mipi.frame_rate);
+	if (rc) {
+		pr_err("%s: unable to calculate phy timings\n", __func__);
+		/* Restore */
+		goto error;
+	}
+
+	ctrl_pdata->refresh_clk_rate = false;
+	return 0;
+
+error:
+	/* Restore previous values before exiting */
+	pinfo->mipi.frame_rate = frame_rate;
+	ctrl_pdata->pclk_rate = pclk_rate;
+	ctrl_pdata->byte_clk_rate = byte_clk_rate;
+	ctrl_pdata->refresh_clk_rate = false;
+	return rc;
+}
+
+#endif
+/* end -20160505-ENABLE_LCD_MIPI_DEBUG*/
 static void mdss_dsi_pm_qos_add_request(struct mdss_dsi_ctrl_pdata *ctrl_pdata)
 {
 	struct irq_info *irq_info;
@@ -274,12 +339,20 @@ static int mdss_dsi_panel_power_off(struct mdss_panel_data *pdata)
 
 	ctrl_pdata = container_of(pdata, struct mdss_dsi_ctrl_pdata,
 				panel_data);
-
-	ret = mdss_dsi_panel_reset(pdata, 0);
-	if (ret) {
-		pr_warn("%s: Panel reset failed. rc=%d\n", __func__, ret);
-		ret = 0;
+	/*pan,keep reset gpio high 0620 start*/
+	if (ctrl_pdata->rst_gpio_keep_high_flag){
+		printk("LCD %s: keep reset gpio high while sleep in !\n", __func__);
+		ret = mdss_dsi_panel_reset(pdata, 2);		
 	}
+	else{
+		printk("LCD %s: set reset gpio low while sleep in !!\n", __func__);
+		ret = mdss_dsi_panel_reset(pdata, 0);
+	}
+	
+		if (ret) {
+			pr_warn("%s: Panel reset failed. rc=%d\n", __func__, ret);
+			ret = 0;
+		}
 
 	if (mdss_dsi_pinctrl_set_state(ctrl_pdata, false))
 		pr_debug("reset disable: pinctrl not enabled\n");
@@ -1144,7 +1217,7 @@ static int mdss_dsi_off(struct mdss_panel_data *pdata, int power_state)
 	ctrl_pdata->ctrl_state &= ~CTRL_STATE_DSI_ACTIVE;
 
 	mdss_dsi_clk_ctrl(ctrl_pdata, DSI_ALL_CLKS, 0);
-
+	mdss_dsi_panel_3v_power(pdata, 0);//ZTE
 panel_power_ctrl:
 	ret = mdss_dsi_panel_power_ctrl(pdata, power_state);
 	if (ret) {
@@ -1303,7 +1376,7 @@ int mdss_dsi_on(struct mdss_panel_data *pdata)
 		pr_debug("%s: dsi_on from panel low power state\n", __func__);
 		goto end;
 	}
-
+	mdss_dsi_panel_3v_power(pdata, 1);
 	ret = mdss_dsi_set_clk_src(ctrl_pdata);
 	if (ret) {
 		pr_err("%s: failed to set clk src. rc=%d\n", __func__, ret);
@@ -2225,7 +2298,19 @@ static int mdss_dsi_event_handler(struct mdss_panel_data *pdata,
 	case MDSS_EVENT_LINK_READY:
 		if (ctrl_pdata->refresh_clk_rate)
 			rc = mdss_dsi_clk_refresh(pdata);
-
+		
+/* start -20160505-ENABLE_LCD_MIPI_DEBUG*/
+#ifdef ENABLE_LCD_MIPI_DEBUG
+		try_to_parse_new_lcd_setting();
+		if(parsed_new_lcd_setting_flag){			
+			set_new_panel_setting(&(pdata->panel_info),&lcd_mipi_debug);
+			ctrl_pdata->refresh_clk_rate = true;
+			mdss_dsi_clk_refresh_zte(pdata);
+		}else{		
+			printk("LCD could not parse new setting!!\n");
+		}
+#endif
+/* end -20160505-ENABLE_LCD_MIPI_DEBUG*/
 		mdss_dsi_get_hw_revision(ctrl_pdata);
 		mdss_dsi_get_phy_revision(ctrl_pdata);
 		rc = mdss_dsi_on(pdata);
@@ -3414,6 +3499,22 @@ int dsi_panel_device_register(struct platform_device *ctrl_pdev,
 
 	pr_info("%s: Continuous splash %s\n", __func__,
 		pinfo->cont_splash_enabled ? "enabled" : "disabled");
+#if 1
+	ctrl_pdata->lcd_3v_vsp_en_gpio = of_get_named_gpio(ctrl_pdev->dev.of_node,
+		"zte,lcd-3v-vsp-enable-gpio", 0);	
+	if (!gpio_is_valid(ctrl_pdata->lcd_3v_vsp_en_gpio)) {
+		pr_err("%s:%d, qcom,lcd-3v-vsp-enable-gpio not specified\n",
+						__func__, __LINE__);
+	} else {
+		rc = gpio_request(ctrl_pdata->lcd_3v_vsp_en_gpio, "lcd_3v_vsp_en_gpio");
+		if (rc) {
+			pr_err("request lcd_3v_vsp_en_gpio failed, rc=%d\n",
+			       rc);
+			gpio_free(ctrl_pdata->lcd_3v_vsp_en_gpio);
+			return -ENODEV;
+		}
+	}
+#endif
 
 	if (pinfo->cont_splash_enabled) {
 		rc = mdss_dsi_panel_power_ctrl(&(ctrl_pdata->panel_data),

@@ -217,7 +217,7 @@ static int adm_get_idx_if_copp_exists(int port_idx, int topology, int mode,
 {
 	int idx;
 
-	pr_debug("%s: port_idx-%d, topology-0x%x, mode-%d, rate-%d, bit_width-%d\n",
+	pr_err("%s: chenjun: port_idx-%d, topology-0x%x, mode-%d, rate-%d, bit_width-%d\n",
 		 __func__, port_idx, topology, mode, rate, bit_width);
 
 	for (idx = 0; idx < MAX_COPPS_PER_PORT; idx++)
@@ -1634,7 +1634,7 @@ static int send_adm_cal_block(int port_id, int copp_idx,
 	struct adm_cmd_set_pp_params_v5	adm_params;
 	int port_idx;
 
-	pr_debug("%s: Port id 0x%x sample_rate %d ,\n", __func__,
+	pr_err("%s: chenjun: Port id 0x%x sample_rate %d\n", __func__,
 			port_id, sample_rate);
 	port_id = afe_convert_virtual_to_portid(port_id);
 	port_idx = adm_validate_and_get_port_index(port_id);
@@ -1823,7 +1823,7 @@ static struct cal_block_data *adm_find_cal(int cal_index, int path,
 				return cal_block;
 		}
 	}
-	pr_debug("%s: Can't find ADM cal for cal_index %d, path %d, app %d, acdb_id %d sample_rate %d defaulting to search by app type\n",
+	pr_err("%s: chenjun: Can't find ADM cal for cal_index %d, path %d, app %d, acdb_id %d sample_rate %d defaulting to search by app type\n",
 		__func__, cal_index, path, app_type, acdb_id, sample_rate);
 	return adm_find_cal_by_app_type(cal_index, path, app_type);
 }
@@ -2044,9 +2044,9 @@ int adm_open(int port_id, int path, int rate, int channel_mode, int topology,
 	int port_idx, copp_idx, flags;
 	int tmp_port = q6audio_get_port_id(port_id);
 
-	pr_debug("%s:port %#x path:%d rate:%d mode:%d perf_mode:%d,topo_id %d\n",
+	pr_err("%s: chenjun: port %#x path:%d rate:%d mode:%d perf_mode:%d,topo_id %#X, bit(%d)\n",
 		 __func__, port_id, path, rate, channel_mode, perf_mode,
-		 topology);
+		 topology, bit_width);
 
 	port_id = q6audio_convert_virtual_to_portid(port_id);
 	port_idx = adm_validate_and_get_port_index(port_id);
@@ -2090,10 +2090,18 @@ int adm_open(int port_id, int path, int rate, int channel_mode, int topology,
 
 	copp_idx = adm_get_idx_if_copp_exists(port_idx, topology, perf_mode,
 						rate, bit_width, app_type);
+
+	pr_err("%s: chenjun: copp_idx-%d, rate-%d, bit_width-%d\n",
+		 __func__, copp_idx, rate, bit_width);
+
 	if (copp_idx < 0) {
 		copp_idx = adm_get_next_available_copp(port_idx);
+
+	pr_err("%s: chenjun: next_available_copp: copp_idx-%d\n",
+		 __func__, copp_idx);
+
 		if (copp_idx >= MAX_COPPS_PER_PORT) {
-			pr_err("%s: exceeded copp id %d\n",
+			pr_err("%s: chenjun: exceeded copp id %d\n",
 				 __func__, copp_idx);
 			return -EINVAL;
 		} else {

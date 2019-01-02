@@ -79,8 +79,15 @@ obj-$(CONFIG_SND_SOC_MDM9630) += snd-soc-mdm9630.o
 
 # for MSM 8x16/8952 sound card driver
 snd-soc-msm8x16-objs := msm8x16.o msm8939-slimbus.o msm-audio-pinctrl.o msm8952.o
-snd-soc-msm8x16-objs += msm8952-slimbus.o msm8952-dai-links.o
+snd-soc-msm8x16-qcom-cdc-objs += msm8952-slimbus.o msm8952-dai-links.o
 obj-$(CONFIG_SND_SOC_MSM8X16) += snd-soc-msm8x16.o
+
+ifeq ($(CONFIG_AK4961_CODEC),y)
+snd-soc-msm8x16-akm-cdc-objs += msm8952-slimbus-ak4961.o msm8952-dai-links-ak4961.o
+obj-$(CONFIG_SND_SOC_MSM8X16) += snd-soc-msm8x16-akm-cdc.o
+else
+obj-$(CONFIG_SND_SOC_MSM8X16) += snd-soc-msm8x16-qcom-cdc.o
+endif
 
 # for MSM 8909 sound card driver
 snd-soc-msm8909-objs := msm8x16.o

@@ -361,7 +361,7 @@ static void __sync_tlb(struct msm_iommu_drvdata *iommu_drvdata, int ctx,
 	SET_TLBSYNC(base, ctx, 0);
 	/* No barrier needed due to read dependency */
 
-	for (count = 500000; count > 0; count--) {
+	for (count = 1000000; count > 0; count--) {
 		val = readl_relaxed(CTX_REG(CB_TLBSTATUS, base, ctx));
 		if ((val & CB_TLBSTATUS_SACTIVE) == 0)
 			break;

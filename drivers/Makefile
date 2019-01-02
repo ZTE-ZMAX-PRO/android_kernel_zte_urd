@@ -162,7 +162,7 @@ obj-$(CONFIG_NTB)		+= ntb/
 obj-$(CONFIG_ANDROID)		+= android/
 
 #MobiCore
-obj-$(CONFIG_MOBICORE_SUPPORT)  += gud/
+obj-$(CONFIG_TRUSTONIC_TEE)  += gud/
 
 obj-$(CONFIG_CORESIGHT)		+= coresight/
 obj-$(CONFIG_ESOC)		+= esoc/

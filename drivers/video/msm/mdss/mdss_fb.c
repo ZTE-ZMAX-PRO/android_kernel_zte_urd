@@ -1293,7 +1293,14 @@ void mdss_fb_set_backlight(struct msm_fb_data_type *mfd, u32 bkl_lvl)
 	if ((((mdss_fb_is_power_off(mfd) && mfd->dcm_state != DCM_ENTER)
 		|| !mfd->allow_bl_update) && !IS_CALIB_MODE_BL(mfd)) ||
 		mfd->panel_info->cont_splash_enabled) {
+	#if defined (CONFIG_BOARD_URD)
+		if (bkl_lvl !=0)
+			mfd->unset_bl_level = bkl_lvl;
+	#else
 		mfd->unset_bl_level = bkl_lvl;
+	#endif
+		printk("LCD unset_bl_level = %d, allow_bl_update=%d --return !\n", 
+							mfd->unset_bl_level,mfd->allow_bl_update);
 		return;
 	} else if (mdss_fb_is_power_on(mfd) && mfd->panel_info->panel_dead) {
 		mfd->unset_bl_level = mfd->bl_level;
@@ -1338,9 +1345,16 @@ void mdss_fb_update_backlight(struct msm_fb_data_type *mfd)
 	struct mdss_panel_data *pdata;
 	u32 temp;
 	bool bl_notify = false;
-
+#if defined (CONFIG_BOARD_URD)
+	if (!mfd->unset_bl_level){
+		mfd->allow_bl_update = true;
+		return;
+	}
+#else
 	if (!mfd->unset_bl_level)
 		return;
+#endif
+
 	mutex_lock(&mfd->bl_lock);
 	if (!mfd->allow_bl_update) {
 		pdata = dev_get_platdata(&mfd->pdev->dev);

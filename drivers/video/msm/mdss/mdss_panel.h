@@ -781,6 +781,42 @@ struct mdss_panel_cfg *mdss_panel_intf_type(int intf_val);
  *
  * returns true if mdss is ready, else returns false.
  */
+
+
+//#define ENABLE_LCD_MIPI_DEBUG
+
+/* start -20160505-ENABLE_LCD_MIPI_DEBUG*/
+#ifdef ENABLE_LCD_MIPI_DEBUG
+
+#define MAX_INITIAL_CODE_LEN		1024
+#define DECIMAL_FORMAT_LEN			9
+#define HEXADECIMAL_FORMAT_LEN		15
+#define MAX_PANEL_NAME_LEN			64
+#define TIMING_LEN					12
+
+struct zte_lcd_mipi_debug{
+
+	int panel_w;
+	int panel_h;
+	int mipi_lane;
+	int hfront_porch;
+	int hback_porch;
+	int hpulse_width;
+	int vfront_porch;
+	int vback_porch;
+	int vpulse_width;
+	int timing[TIMING_LEN];
+	int tclk_post;
+	int tclk_pre;
+	int write_test_flag;
+	char panel_name[MAX_PANEL_NAME_LEN];
+};
+
+void try_to_parse_new_lcd_setting(void);
+void set_new_panel_setting(struct mdss_panel_info *pinfo,struct zte_lcd_mipi_debug * ptr);
+#endif
+/* end -20160505-ENABLE_LCD_MIPI_DEBUG*/
+
 bool mdss_is_ready(void);
 int mdss_rect_cmp(struct mdss_rect *rect1, struct mdss_rect *rect2);
 #ifdef CONFIG_FB_MSM_MDSS

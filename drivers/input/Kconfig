@@ -214,6 +214,16 @@ source "drivers/input/touchscreen/Kconfig"
 
 source "drivers/input/misc/Kconfig"
 
+#shilinfeng for fp 20150828
+source "drivers/input/fingerprint/synaptics_vfs/Kconfig"
+
+source "drivers/input/fingerprint/fpc/Kconfig"
+
+source "drivers/input/fingerprint/goodix/Kconfig"
+
+#jiangfeng add for SX9500 20150226
+source "drivers/input/ztemisc/Kconfig"
+
 endif
 
 menu "Hardware I/O ports"

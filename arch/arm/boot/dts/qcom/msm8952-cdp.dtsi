@@ -434,7 +434,7 @@
 
 &pmx_mdss {
 	qcom,num-grp-pins = <3>;
-	qcom,pins = <&gp 90>, <&gp 0>, <&gp 91>;
+	qcom,pins = <&gp 90>, <&gp 0>, <&gp 0>;
 };
 
 &pmx_mdss_te {
@@ -450,7 +450,7 @@
 
 	qcom,platform-enable-gpio = <&msm_gpio 90 0>;
 	qcom,platform-reset-gpio = <&msm_gpio 0 0>;
-	qcom,platform-bklight-en-gpio = <&msm_gpio 91 0>;
+	// qcom,platform-bklight-en-gpio = <&msm_gpio 0 0>;
 };
 
 &dsi_truly_1080_cmd {

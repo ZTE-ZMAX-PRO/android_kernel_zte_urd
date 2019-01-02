@@ -807,6 +807,18 @@ static int msm_isp_set_dual_HW_master_slave_mode(
 			&vfe_dev->common_data->ms_resource.master_sof_info;
 		vfe_dev->common_data->ms_resource.sof_delta_threshold =
 			dual_hw_ms_cmd->sof_delta_threshold;
+/*
+ * clear slave mask when re set master device
+ * ZTE_CAM_LIJING_20160309
+ */
+#if 1
+		if(vfe_dev->common_data->ms_resource.reserved_slave_mask & (1 << 0)){
+		    pr_err("%s vfe_dev->common_data->ms_resource.reserved_slave_mask=%d\n",__func__,vfe_dev->common_data->ms_resource.reserved_slave_mask);
+      		    vfe_dev->common_data->ms_resource.num_slave = 0;
+      		    vfe_dev->common_data->ms_resource.reserved_slave_mask = 0;
+      		    vfe_dev->common_data->ms_resource.slave_active_mask = 0;
+		}
+#endif
 	} else if (src_info != NULL) {
 		spin_lock(&vfe_dev->common_data->common_dev_data_lock);
 		src_info->dual_hw_type = DUAL_HW_MASTER_SLAVE;

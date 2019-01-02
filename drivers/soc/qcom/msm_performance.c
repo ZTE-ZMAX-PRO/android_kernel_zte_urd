@@ -25,6 +25,8 @@
 #include <linux/module.h>
 #include <linux/kthread.h>
 
+#include <linux/fb.h>//ZTE_PM
+
 static struct mutex managed_cpus_lock;
 
 /* Maximum number to clusters that this module will manage*/
@@ -1691,6 +1693,53 @@ static struct notifier_block __refdata msm_performance_cpu_notifier = {
 	.notifier_call = msm_performance_cpu_callback,
 };
 
+//ZTE_PM begin
+
+static void msm_performance_control_bigcores(int enable)
+{
+    int cluster1=0;
+    int cluster2=0;
+    
+    if (!clusters_inited) {
+        pr_info("%s clusters_inited not ready\n", __func__);
+        return;
+    }
+	//this is specail for msm8952, shutdown cluster0 when screen off
+    cluster2 = min(4,(int)cpumask_weight(managed_clusters[0]->cpus));
+    cluster1 = min(((enable==1)?4:0),(int)cpumask_weight(managed_clusters[1]->cpus));
+    
+    managed_clusters[0]->max_cpu_request = cluster1;
+    managed_clusters[1]->max_cpu_request = cluster2;
+
+    pr_info("%s enable=%d cluster0=%d cluster1=%d\n", __func__, enable,
+        managed_clusters[0]->max_cpu_request,
+        managed_clusters[1]->max_cpu_request); 
+
+    schedule_delayed_work(&evaluate_hotplug_work, 0);
+}
+
+static int msm_performance_fb_callback(struct notifier_block *nfb,
+				 unsigned long event, void *data)
+{
+	struct fb_event *evdata = data;
+	int *blank;
+    
+    pr_info("%s enter , event=%lu\n", __func__, event); 
+	if (evdata && evdata->data && event == FB_EVENT_BLANK) {
+		blank = evdata->data;
+		if (*blank == FB_BLANK_UNBLANK)
+			msm_performance_control_bigcores(1);
+		else if ((*blank == FB_BLANK_POWERDOWN)||(*blank == FB_BLANK_NORMAL))
+			msm_performance_control_bigcores(0);
+	}
+
+	return 0;
+}
+
+static struct notifier_block __refdata msm_performance_fb_notifier = {
+	.notifier_call = msm_performance_fb_callback,
+};
+//ZTE_PM_end
 static void single_mod_exit_timer(unsigned long data)
 {
 	int i;
@@ -1816,6 +1865,7 @@ static int __init msm_performance_init(void)
 		per_cpu(cpu_stats, cpu).max = UINT_MAX;
 
 	register_cpu_notifier(&msm_performance_cpu_notifier);
+	fb_register_client(&msm_performance_fb_notifier); //ZTE_PM
 
 	return 0;
 }

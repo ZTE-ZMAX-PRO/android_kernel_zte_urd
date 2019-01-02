@@ -41,6 +41,12 @@
 
 static unsigned long phys_initrd_start __initdata = 0;
 static unsigned long phys_initrd_size __initdata = 0;
+
+#define MSM_SDLOG_PHYS      0x9E000000
+#define MSM_SDLOG_SIZE      (1024*1024 * 16)
+extern	char __initdata boot_command_line[COMMAND_LINE_SIZE];
+#define CMDLINE_SDLOG_ENABLE          "sdlog.flag=enable"
+
 int msm_krait_need_wfe_fixup;
 EXPORT_SYMBOL(msm_krait_need_wfe_fixup);
 
@@ -361,6 +367,29 @@ phys_addr_t __init arm_memblock_steal(phys_addr_t size, phys_addr_t align)
 	return phys;
 }
 
+static void sdlog_memory_reserve(void)
+{
+	int ret;
+	//sdlog flag is passed from boot parameter, set the flag if sdlog is enabled
+	if (strstr(boot_command_line, CMDLINE_SDLOG_ENABLE))
+	{
+		ret = memblock_reserve(MSM_SDLOG_PHYS, MSM_SDLOG_SIZE);
+		if (0 != ret)
+		{
+			pr_err("sdlog reserve failed: %d\n", ret);
+		}
+		else
+		{
+			pr_info("sdlog enabled, reserve 0x%16lx - 0x%16lx for sdlog (0x%lx byte) \n", (long unsigned int)MSM_SDLOG_PHYS, (long unsigned int)(MSM_SDLOG_PHYS+MSM_SDLOG_SIZE), (long unsigned int)MSM_SDLOG_SIZE);
+		}
+	}
+	else
+	{
+		pr_info("sdlog disabled\n");
+	}
+
+}
+
 void __init arm_memblock_init(const struct machine_desc *mdesc)
 {
 	/* Register the kernel text, kernel data and initrd with memblock. */
@@ -398,6 +427,7 @@ void __init arm_memblock_init(const struct machine_desc *mdesc)
 		mdesc->reserve();
 
 	early_init_fdt_scan_reserved_mem();
+	sdlog_memory_reserve();
 
 	/*
 	 * reserve memory for DMA contigouos allocations,
