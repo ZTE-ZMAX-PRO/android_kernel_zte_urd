@@ -284,6 +284,14 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
 				}
 			}
 #endif
+#ifdef CONFIG_TASKSTATS
+                        diff = ktime_sub(ktime_get(), host->perf.last_check);
+                        if (ktime_to_us(diff) >= 1000000 ){
+                                host->perf.last_check = ktime_get();
+                                trace_mmc_blk_rw_summary(host->perf.rbytes_drv, ktime_to_us(host->perf.rtime_drv),
+                                          host->perf.wbytes_drv, ktime_to_us(host->perf.wtime_drv));
+                        }
+#endif
 			pr_debug("%s:     %d bytes transferred: %d\n",
 				mmc_hostname(host),
 				mrq->data->bytes_xfered, mrq->data->error);

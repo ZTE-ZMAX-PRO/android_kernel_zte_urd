@@ -49,6 +49,7 @@
  * we do not waste memory on systems that are not using tracing.
  */
 bool ring_buffer_expanded;
+bool abs_time = false;
 
 /*
  * We need to change this state when a selftest is running.
@@ -4528,6 +4529,9 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
 	ret = tracing_resize_ring_buffer(tr, val, tracing_get_cpu(inode));
 	if (ret < 0)
 		return ret;
+	
+	if ( val == 1048576 )
+	   abs_time = true;
 
 	*ppos += cnt;
 

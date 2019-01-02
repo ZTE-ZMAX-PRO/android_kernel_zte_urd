@@ -392,6 +392,8 @@
 #define CHG_ITERM_700MA				0x14
 
 #define ADC_TM_WARM_COOL_THR_ENABLE		ADC_TM_HIGH_LOW_THR_ENABLE
+/*zte defined parameters add here*/
+extern int smb1351_is_good;
 
 enum {
 	USER	= BIT(0),
@@ -1444,6 +1446,7 @@ static int smb1351_parallel_set_chg_present(struct smb1351_charger *chip,
 	}
 
 	chip->parallel_charger_present = present;
+    smb1351_is_good = chip->parallel_charger_present;
 	/*
 	 * When present is being set force USB suspend, start charging
 	 * only when POWER_SUPPLY_PROP_CURRENT_MAX is set.
@@ -2977,7 +2980,7 @@ static int smb1351_parallel_charger_probe(struct i2c_client *client,
 		pr_err("Couldn't allocate memory\n");
 		return -ENOMEM;
 	}
-
+	pr_debug("smb1351_parallel_charger_probe entry\n");
 	chip->client = client;
 	chip->dev = &client->dev;
 	chip->parallel_charger = true;

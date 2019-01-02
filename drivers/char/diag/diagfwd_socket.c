@@ -541,6 +541,8 @@ static int cntl_socket_process_msg_client(uint32_t cmd, uint32_t node_id,
 			break;
 		}
 	}
+    //add for modem crash debug by liumeng
+    WARN_ON(1);
 
 	if (!found)
 		return -EIO;

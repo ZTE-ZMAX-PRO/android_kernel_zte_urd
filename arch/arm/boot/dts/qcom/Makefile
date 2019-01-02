@@ -121,6 +121,11 @@ dtb-$(CONFIG_ARCH_MSM8916) += msm8916-sim.dtb \
 	msm8952-cdp.dtb \
 	msm8952-ext-codec-cdp.dtb \
 	msm8952-mtp.dtb \
+	msm8952-zte-jerry.dtb \
+	msm8952-zte-orchid.dtb \
+	msm8952-zte-jasmine.dtb \
+	msm8952-zte-urd.dtb \
+	msm8952-zte-gevjon.dtb \
 	msm8952-polaris.dtb \
 	apq8052-cdp.dtb \
 	apq8052-mtp.dtb \

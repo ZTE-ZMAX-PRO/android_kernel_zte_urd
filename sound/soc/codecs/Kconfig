@@ -203,6 +203,9 @@ config SND_SOC_AK4642
 config SND_SOC_AK4671
 	tristate
 
+config SND_SOC_AK4961
+	tristate
+
 config SND_SOC_AK5386
 	tristate
 
@@ -388,6 +391,9 @@ config SND_SOC_MSM8X10_WCD
 config SND_SOC_MSM8X16_WCD
 	tristate
 
+config SND_SOC_AK4375
+	tristate
+
 config SND_SOC_WCD_CPE
 	tristate
 	default y if SND_SOC_WCD9330=y || SND_SOC_WCD9335=y
@@ -398,6 +404,7 @@ config SND_SOC_MSM8909_WCD
 config AUDIO_EXT_CLK
 	tristate
 	default y if SND_SOC_WCD9335=y || SND_SOC_WCD9330=y || SND_SOC_MSM8X16_WCD=y
+	default y if SND_SOC_AK4961=y
 
 config SND_SOC_WCD_MBHC
 	tristate

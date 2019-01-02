@@ -244,6 +244,8 @@ int msm_gpioset_activate(enum pinctrl_client client, char *keyword)
 		return gp_set;
 	}
 
+pr_err("%s: key(%s), gp_set(%d), cnt(%d)\n", __func__, keyword, gp_set, gpioset_info[client].gpioset_state[gp_set]);
+
 	if (!gpioset_info[client].gpioset_state[gp_set]) {
 		/*
 		 * If pinctrl pointer is not valid,
@@ -278,6 +280,8 @@ int msm_gpioset_suspend(enum pinctrl_client client, char *keyword)
 				__func__);
 		return gp_set;
 	}
+
+pr_err("%s: key(%s), gp_set(%d), cnt(%d)\n", __func__, keyword, gp_set, gpioset_info[client].gpioset_state[gp_set]);
 
 	if (1 == gpioset_info[client].gpioset_state[gp_set]) {
 		pinctrl_info[client].active_set &= ~(1 << gp_set);

@@ -687,6 +687,19 @@ static u64 sched_vslice(struct cfs_rq *cfs_rq, struct sched_entity *se)
 	return calc_delta_fair(sched_slice(cfs_rq, se), se);
 }
 
+#ifdef CONFIG_TASKSTATS
+static long long nsec_high(unsigned long long nsec)
+{
+        if ((long long)nsec < 0) {
+                nsec = -nsec;
+                do_div(nsec, 1000000);
+                return -nsec;
+        }
+        do_div(nsec, 1000000);
+
+        return nsec;
+}
+#endif
 /*
  * Update the current task's runtime statistics. Skip current tasks that
  * are not in our scheduling class.
@@ -703,7 +716,25 @@ __update_curr(struct cfs_rq *cfs_rq, struct sched_entity *curr,
 	curr->sum_exec_runtime += delta_exec;
 	schedstat_add(cfs_rq, exec_clock, delta_exec);
 	delta_exec_weighted = calc_delta_fair(delta_exec, curr);
+#ifdef CONFIG_TASKSTATS
+if (entity_is_task(curr))
+{
+	struct task_struct *parent = task_of(curr)->group_leader;
+	if (parent){
+	unsigned long delta;
+	parent->se.statistics.cpuusage_summary += delta_exec;
 
+        delta = parent->se.statistics.cpuusage_summary - parent->se.statistics.last_cpuusage_sum;
+        if (delta > 1000000000 ){ //if process use 50ms within 250ms , we log it
+		const struct cred *cred;
+		cred = __task_cred(parent);
+		trace_sched_cpuusage_summary(parent->pid, cred->uid, nsec_high(parent->se.statistics.cpuusage_summary));
+                parent->se.statistics.last_cpuusage_sum = parent->se.statistics.cpuusage_summary;
+        }
+	} else {
+	}
+}
+#endif
 	curr->vruntime += delta_exec_weighted;
 	update_min_vruntime(cfs_rq);
 }
@@ -854,12 +885,26 @@ update_stats_wait_end(struct cfs_rq *cfs_rq, struct sched_entity *se,
 	schedstat_set(se->statistics.wait_sum, se->statistics.wait_sum +
 			rq_clock(rq_of(cfs_rq)) - se->statistics.wait_start);
 #ifdef CONFIG_SCHEDSTATS
+#ifdef CONFIG_TASK_DELAY_ACCT
 	if (entity_is_task(se)) {
 		u64 delta;
 		struct sched_max_latency *max;
+		struct task_struct *tsk = task_of(se);
 
 		delta = rq_clock(rq_of(cfs_rq)) - se->statistics.wait_start;
 		trace_sched_stat_wait(task_of(se), delta);
+		//tongcd dirty code begin
+		delta = se->statistics.wait_sum - se->statistics.last_cpuwait_sum;
+		if (tsk && delta > 100*1000*1000 ){
+		    if ((rq_of(cfs_rq)->clock - se->statistics.last_cpuwait_timestamp) < 300*1000*1000){
+		        //trace_printk("process [%u]cpuwait %llu ms happen %llu times\n", tsk->pid, nsec_high(delta), se->statistics.wait_count);
+			trace_sched_cpuwait_summary(tsk->pid, nsec_high(delta), se->statistics.wait_count);
+		    }
+		    se->statistics.last_cpuwait_sum = se->statistics.wait_sum;
+		    se->statistics.last_cpuwait_timestamp = rq_clock(rq_of(cfs_rq));
+		} else {
+		    
+		}
 
 		delta = delta >> 10;
 		max = this_cpu_ptr(&sched_max_latency);
@@ -871,6 +916,7 @@ update_stats_wait_end(struct cfs_rq *cfs_rq, struct sched_entity *se,
 
 		check_for_high_latency(task_of(se), delta);
 	}
+#endif
 #endif
 	schedstat_set(se->statistics.wait_start, 0);
 }
@@ -3853,6 +3899,23 @@ static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
 				se->statistics.iowait_sum += delta;
 				se->statistics.iowait_count++;
 				trace_sched_stat_iowait(tsk, delta);
+#ifdef CONFIG_TASKSTATS
+			{
+				u64 delta2;
+				delta2 = se->statistics.iowait_sum - se->statistics.last_iowait_sum;
+				if (delta2 > 100*1000*1000 ){
+					u64 delta1 = rq_clock(rq_of(cfs_rq)) - se->statistics.last_iowait_timestamp;
+		    			if ( delta1 < 300*1000*1000){
+					    trace_sched_iowait_summary(tsk->pid, nsec_high(delta2), nsec_high(delta1));
+					    //trace_printk("process [%u]iowait %llu ms happen %llu times\n", tsk->pid, nsec_high(delta2), se->statistics.iowait_count);
+		    			} 
+					{ 
+		    			    se->statistics.last_iowait_sum = se->statistics.iowait_sum;
+		    			    se->statistics.last_iowait_timestamp = rq_clock(rq_of(cfs_rq));
+					} 
+				}
+			}
+#endif
 			}
 
 			trace_sched_stat_blocked(tsk, delta);

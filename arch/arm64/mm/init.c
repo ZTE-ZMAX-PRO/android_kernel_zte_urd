@@ -43,6 +43,12 @@
 static unsigned long phys_initrd_start __initdata = 0;
 static unsigned long phys_initrd_size __initdata = 0;
 
+#define MSM_SDLOG_PHYS      0x9E000000
+#define MSM_SDLOG_SIZE      (1024*1024 * 16)
+extern	char __initdata boot_command_line[COMMAND_LINE_SIZE];
+#define CMDLINE_SDLOG_ENABLE          "sdlog.flag=enable"
+
+
 phys_addr_t memstart_addr __read_mostly = 0;
 
 void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
@@ -133,6 +139,21 @@ static void arm64_memory_present(void)
 }
 #endif
 
+static void sdlog_memory_reserve(void)
+{
+	//sdlog flag is passed from boot parameter, set the flag if sdlog is enabled
+	if (strstr(boot_command_line, CMDLINE_SDLOG_ENABLE))
+	{
+		memblock_reserve(MSM_SDLOG_PHYS, MSM_SDLOG_SIZE);
+		pr_notice("sdlog enabled, reserve 0x%16lx - 0x%16lx for sdlog (0x%lx byte) \n", (long unsigned int)MSM_SDLOG_PHYS, (long unsigned int)(MSM_SDLOG_PHYS+MSM_SDLOG_SIZE), (long unsigned int)MSM_SDLOG_SIZE);
+	}
+	else
+	{
+		pr_notice("sdlog disabled\n");
+	}
+
+}
+
 void __init arm64_memblock_init(void)
 {
 	phys_addr_t dma_phys_limit = 0;
@@ -157,6 +178,7 @@ void __init arm64_memblock_init(void)
 	memblock_reserve(__pa(idmap_pg_dir), IDMAP_DIR_SIZE);
 
 	early_init_fdt_scan_reserved_mem();
+	sdlog_memory_reserve();
 
 	/* 4GB maximum for 32-bit only capable devices */
 	if (IS_ENABLED(CONFIG_ZONE_DMA))

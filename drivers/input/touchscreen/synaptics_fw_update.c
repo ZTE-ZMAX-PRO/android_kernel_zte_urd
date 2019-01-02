@@ -921,7 +921,7 @@ static enum flash_area fwu_go_nogo(void)
 			fwu->config_data[3]);
 	imageConfigID =  extract_uint_be(fwu->config_data);
 
-	dev_dbg(&i2c_client->dev,
+	dev_info(&i2c_client->dev,
 		"%s: Device config ID %d, .img config ID %d\n",
 		__func__, deviceConfigID, imageConfigID);
 

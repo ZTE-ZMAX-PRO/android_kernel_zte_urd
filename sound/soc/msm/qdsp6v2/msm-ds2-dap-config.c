@@ -1424,6 +1424,9 @@ static int msm_ds2_dap_handle_commands(u32 cmd, void *arg)
 		pr_debug("%s: DAP_CMD_SET_ACTIVE_DEVICE length %d\n",
 			__func__, dolby_data->length);
 		/* TODO: need to handle multiple instance*/
+		if (dolby_data->device_id ==WIRED_HEADSET) {
+			dolby_data->device_id =WIRED_HEADPHONE;
+		}
 		ds2_dap_params_states.device |= dolby_data->device_id;
 		port_id = msm_ds2_dap_get_port_id(
 						  dolby_data->device_id,

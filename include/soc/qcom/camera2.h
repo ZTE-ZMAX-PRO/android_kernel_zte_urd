@@ -107,11 +107,10 @@ struct msm_camera_power_ctrl_t {
 	struct camera_vreg_t *cam_vreg;
 	int num_vreg;
 	struct msm_camera_i2c_conf *i2c_conf;
-	struct clk **clk_ptr;
 	struct msm_cam_clk_info *clk_info;
 	struct msm_pinctrl_info pinctrl_info;
 	uint8_t cam_pinctrl_status;
-	size_t clk_info_size;
+	uint16_t clk_info_size;
 };
 
 enum msm_camera_actuator_name {
@@ -149,6 +148,16 @@ struct msm_camera_sensor_board_info {
 	const char *sensor_name;
 	const char *eeprom_name;
 	const char *actuator_name;
+ /*
+  * camera sensor module compatile
+  * 
+  * by ZTE_YCM_20140728 yi.changming 000028
+  */
+// --->
+	const char *sensor_module_name;
+	const char *chromtix_lib_name;
+	const char *default_chromtix_lib_name;
+// <---
 	const char *ois_name;
 	const char *special_support_sensors[MAX_SPECIAL_SUPPORT_SIZE];
 	int32_t special_support_size;
