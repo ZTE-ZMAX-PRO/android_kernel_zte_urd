@@ -482,6 +482,10 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
 			__inc_zone_page_state(page, NR_FILE_PAGES);
 			spin_unlock_irq(&mapping->tree_lock);
 			trace_mm_filemap_add_to_page_cache(page);
+#ifdef CONFIG_TASK_IO_ACCOUNTING
+			if (page->mapping->host->i_ino != 0)
+				trace_mm_filemap_file_io_count(page);
+#endif
 		} else {
 			page->mapping = NULL;
 			/* Leave page->index set: truncation relies upon it */

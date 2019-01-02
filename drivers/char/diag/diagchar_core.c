@@ -726,6 +726,13 @@ struct diag_cmd_reg_entry_t *diag_cmd_search(
 						continue;
 					}
 				}
+				else if (entry->cmd_code == MODE_CMD &&
+				    entry->subsys_id != RESET_ID &&
+				    item->proc == APPS_DATA){
+					/*do not handle MODE_CMD on APP
+					if subsys_id != RESET_ID*/
+					continue;
+				}
 				return &item->entry;
 			}
 		}

@@ -114,6 +114,9 @@ struct mmc_ext_csd {
 	u8			raw_trim_mult;		/* 232 */
 	u8			raw_bkops_status;	/* 246 */
 	u8			raw_sectors[4];		/* 212 - 4 bytes */
+	u8			life_time_est_type_a;	/* 268 */
+	u8			life_time_est_type_b;	/* 269 */
+	u8			pre_eol_info;		/* 267 */
 	u8			cmdq_depth;		/* 307 */
 	u8			cmdq_support;		/* 308 */
 

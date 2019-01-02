@@ -32,6 +32,13 @@
 #include "q6voice.h"
 #include "audio_ocmem.h"
 
+#if defined(CONFIG_AK4961_CODEC)
+// chenjun:use AK4961's RX volume control.
+extern int ak4961_internal_rx_gain_set(struct snd_kcontrol *kcontrol,
+       struct snd_ctl_elem_value *ucontrol);
+//
+#endif
+
 #define SHARED_MEM_BUF 2
 #define VOIP_MAX_Q_LEN 10
 #define VOIP_MAX_VOC_PKT_SIZE 4096
@@ -254,6 +261,12 @@ static int msm_voip_gain_put(struct snd_kcontrol *kcontrol,
 
 	pr_debug("%s: volume: %d ramp_duration: %d\n", __func__, volume,
 		ramp_duration);
+	
+#if defined(CONFIG_AK4961_CODEC)
+// chenjun:use AK4961's RX volume control.
+	ak4961_internal_rx_gain_set(kcontrol, ucontrol);
+//
+#endif
 
 	voc_set_rx_vol_step(voc_get_session_id(VOIP_SESSION_NAME),
 						RX_PATH,

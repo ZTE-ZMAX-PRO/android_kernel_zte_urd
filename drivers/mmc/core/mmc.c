@@ -321,6 +321,10 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
 	 */
 	card->ext_csd.rev = ext_csd[EXT_CSD_REV];
 
+       /*Recalculate the year of manufacturing data.0=>1997, or 2013 if EXT_CSD_REV [192] > 4 */
+	if(card->ext_csd.rev > 4)
+	    card->cid.year		= card->cid.year + 16;
+
 	/* fixup device after ext_csd revision field is updated */
 	mmc_fixup_device(card, mmc_fixups);
 
@@ -605,6 +609,14 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
 	} else {
 		card->ext_csd.data_sector_size = 512;
 	}
+	if (card->ext_csd.rev == 7) {
+		card->ext_csd.life_time_est_type_b = ext_csd[EXT_CSD_LIFE_TIME_EST_TYP_B];
+		card->ext_csd.life_time_est_type_a = ext_csd[EXT_CSD_LIFE_TIME_EST_TYP_A];
+		card->ext_csd.pre_eol_info = ext_csd[EXT_CSD_PRE_EOL_INFO];
+		pr_info("%s: life_time_est_type_a= %d,life_time_est_type_b=%d,pre_eol_info=%d\n",
+			mmc_hostname(card->host), card->ext_csd.life_time_est_type_a,
+			card->ext_csd.life_time_est_type_b,card->ext_csd.pre_eol_info);
+	}
 
 	if (card->ext_csd.rev >= 7) {
 		card->ext_csd.cmdq_support = ext_csd[EXT_CSD_CMDQ_SUPPORT];
@@ -720,6 +732,85 @@ MMC_DEV_ATTR(raw_rpmb_size_mult, "%#x\n", card->ext_csd.raw_rpmb_size_mult);
 MMC_DEV_ATTR(enhanced_rpmb_supported, "%#x\n",
 		card->ext_csd.enhanced_rpmb_supported);
 MMC_DEV_ATTR(rel_sectors, "%#x\n", card->ext_csd.rel_sectors);
+MMC_DEV_ATTR(emmc_revision, "%d\n", card->ext_csd.rev);
+MMC_DEV_ATTR(emmc_life_time_a, "%d\n", card->ext_csd.life_time_est_type_a);
+MMC_DEV_ATTR(emmc_life_time_b, "%d\n", card->ext_csd.life_time_est_type_b);
+MMC_DEV_ATTR(pre_eol_info, "%d\n", card->ext_csd.pre_eol_info);
+//export emmc infomation for e-mode...
+typedef struct _mmc_manf_info {
+	int id;
+	char *name;
+} mmc_manf_info;
+
+mmc_manf_info man_list[] = {
+	{0x02, "Sandisk"},
+	{0x11, "Toshiba"},
+	{0x13, "Micro"},
+	{0x15, "Sumsung"},
+	{0x45, "Sandisk"},
+	{0x46, "Kingstone"},
+	{0x90, "Hynix"},
+	{0xfe, "Micro"},
+};
+
+
+static ssize_t mmc_info_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct mmc_card *card = container_of(dev, struct mmc_card, dev);
+	int card_block_size = 512; //fixme...
+	char *memtype = "UNKNOWN";
+	char *manfname = "UNKNOWN";
+	int i = 0;
+
+	switch (card->type) {
+	case MMC_TYPE_MMC:
+		memtype = "MMC";
+		break;
+
+	case MMC_TYPE_SD:
+		memtype = "SD";
+		break;
+
+	case MMC_TYPE_SDIO:
+		memtype = "SDIO";
+		break;
+
+	default:
+		memtype = "UNKNOWN";
+		break;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(man_list); i++) {
+		if (man_list[i].id == card->cid.manfid) {
+			manfname = man_list[i].name;
+			break;
+		}
+	}
+
+	return sprintf(buf, "Memory Type: %s\n"
+		       "Size(sectors): %u\n"
+		       "Block Length (bytes): %d\n"
+		       "Size (kB): %u\n"
+		       "Manufacture ID: 0x%06x(%s)\n"
+		       "OEM/Application ID: 0x%04x\n"
+		       "Product Name: %s\n"
+		       "Product serial #: 0x%08x\n"
+		       "Product Revision: 0x%x\n"
+		       "Manufacturing Date: %02d/%04d\n",
+		       memtype,
+		       card->ext_csd.sectors,
+		       card_block_size,
+		       (card->ext_csd.sectors / 1024) * card_block_size,
+		       card->cid.manfid, manfname,
+		       card->cid.oemid,
+		       card->cid.prod_name,
+		       card->cid.serial,
+		       card->cid.prv,
+		       card->cid.month, card->cid.year);
+}
+
+static DEVICE_ATTR(info, S_IRUGO, mmc_info_show, NULL);
+//end
 
 static struct attribute *mmc_std_attrs[] = {
 	&dev_attr_cid.attr,
@@ -736,9 +827,14 @@ static struct attribute *mmc_std_attrs[] = {
 	&dev_attr_serial.attr,
 	&dev_attr_enhanced_area_offset.attr,
 	&dev_attr_enhanced_area_size.attr,
+	&dev_attr_info.attr,
 	&dev_attr_raw_rpmb_size_mult.attr,
 	&dev_attr_enhanced_rpmb_supported.attr,
 	&dev_attr_rel_sectors.attr,
+	&dev_attr_emmc_revision.attr,
+	&dev_attr_emmc_life_time_a.attr,
+	&dev_attr_emmc_life_time_b.attr,
+	&dev_attr_pre_eol_info.attr,
 	NULL,
 };
 

@@ -30,6 +30,13 @@
 #include "msm-pcm-voice-v2.h"
 #include "q6voice.h"
 
+#if defined(CONFIG_AK4961_CODEC)
+// chenjun:use AK4961's RX volume control.
+extern int ak4961_internal_rx_gain_set(struct snd_kcontrol *kcontrol,
+       struct snd_ctl_elem_value *ucontrol);
+//
+#endif
+
 static struct msm_voice voice_info[VOICE_SESSION_INDEX_MAX];
 
 static struct snd_pcm_hardware msm_pcm_hardware = {
@@ -408,6 +415,12 @@ static int msm_voice_gain_put(struct snd_kcontrol *kcontrol,
 
 	pr_debug("%s: volume: %d session_id: %#x ramp_duration: %d\n", __func__,
 		volume, session_id, ramp_duration);
+
+#if defined(CONFIG_AK4961_CODEC)
+// chenjun:use AK4961's RX volume control.
+	ak4961_internal_rx_gain_set(kcontrol, ucontrol);
+//
+#endif
 
 	voc_set_rx_vol_step(session_id, RX_PATH, volume, ramp_duration);
 

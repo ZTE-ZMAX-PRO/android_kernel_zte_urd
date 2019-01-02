@@ -31,7 +31,7 @@ obj-$(CONFIG_TOUCHSCREEN_EETI)		+= eeti_ts.o
 obj-$(CONFIG_TOUCHSCREEN_ELO)		+= elo.o
 obj-$(CONFIG_TOUCHSCREEN_EGALAX)	+= egalax_ts.o
 obj-$(CONFIG_TOUCHSCREEN_FUJITSU)	+= fujitsu_ts.o
-obj-$(CONFIG_TOUCHSCREEN_GEN_VKEYS)	+= gen_vkeys.o
+obj-$(CONFIG_TOUCHSCREEN_GEN_VKEYS)	+= gen_vkeys.o gen_vkeys_zte.o
 obj-$(CONFIG_TOUCHSCREEN_ILI210X)	+= ili210x.o
 obj-$(CONFIG_TOUCHSCREEN_INEXIO)	+= inexio.o
 obj-$(CONFIG_TOUCHSCREEN_INTEL_MID)	+= intel-mid-touch.o
@@ -53,7 +53,9 @@ obj-$(CONFIG_TOUCHSCREEN_PIXCIR)	+= pixcir_i2c_ts.o
 obj-$(CONFIG_TOUCHSCREEN_S3C2410)	+= s3c2410_ts.o
 obj-$(CONFIG_TOUCHSCREEN_ST1232)	+= st1232.o
 obj-$(CONFIG_TOUCHSCREEN_STMPE)		+= stmpe-ts.o
-obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_v21) += synaptics_dsx/
+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_ZTE) += synaptics_dsx_zte/
+obj-$(CONFIG_TOUCHSCREEN_GT1X_ZTE) += gt1x_zte/
+obj-$(CONFIG_TOUCHSCREEN_GT9XX_ZTE) += gt9xx_zte/
 obj-$(CONFIG_TOUCHSCREEN_TI_AM335X_TSC)	+= ti_am335x_tsc.o
 obj-$(CONFIG_TOUCHSCREEN_TNETV107X)	+= tnetv107x-ts.o
 obj-$(CONFIG_TOUCHSCREEN_TOUCHIT213)	+= touchit213.o
@@ -76,10 +78,72 @@ obj-$(CONFIG_TOUCHSCREEN_WM97XX_ZYLONITE)	+= zylonite-wm97xx.o
 obj-$(CONFIG_TOUCHSCREEN_W90X900)	+= w90p910_ts.o
 obj-$(CONFIG_TOUCHSCREEN_TPS6507X)	+= tps6507x-ts.o
 obj-$(CONFIG_TOUCHSCREEN_FT5X06)	+= ft5x06_ts.o
-obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV)	+= synaptics_rmi_dev.o
-obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE) 	+= synaptics_fw_update.o
-obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4)		+= synaptics_i2c_rmi4.o
-obj-$(CONFIG_TOUCHSCREEN_GT9XX)		+= gt9xx/
+#obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4)		+= synaptics_i2c_rmi4.o
+#obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV)	+= synaptics_rmi_dev.o
+#obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE) 	+= synaptics_fw_update.o
+#obj-$(CONFIG_TOUCHSCREEN_MSTAR21XX)	+= msg21xx_ts.o
+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_I2C)			+= synaptics_dsx_i2c.o
+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV)	+= synaptics_dsx_rmi_dev.o
+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE) 	+= synaptics_dsx_fw_update.o
+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_TEST_REPORTING) +=synaptics_dsx_test_reporting.o
+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_I2C_S3400)	+= synaptics_dsx_i2c_s3400.o
+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV_S3400)	+= synaptics_dsx_rmi_dev_s3400.o
+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_S3400) += synaptics_dsx_fw_update_s3400.o
+#obj-$(CONFIG_TOUCHSCREEN_GT9XX)		+= gt9xx/
 obj-$(CONFIG_TOUCHSCREEN_BU21150)	+= bu21150.o
 obj-$(CONFIG_INPUT_MT_WRAPPER)		+= input_mt_wrapper.o
-obj-$(CONFIG_TOUCHSCREEN_IT7260_I2C)	+= it7258_ts_i2c.o
+obj-$(CONFIG_GT9XX_TOUCHPANEL_DRIVER_ZTE)  += gt9xx.o
+obj-$(CONFIG_GT9XX_TOUCHPANEL_UPDATE_ZTE)  += gt9xx_update.o
+obj-$(CONFIG_GT9XX_TOUCHPANEL_DEBUG_ZTE)   += goodix_tool.o
+obj-$(CONFIG_TOUCHSCREEN_FT5X06_ZTE)	+= ft5x06_ts_zte.o focaltech_ctl.o ft5x06_ex_fun.o
+
+obj-$(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5)	+= cyttsp5.o
+cyttsp5-y := cyttsp5_core.o cyttsp5_mt_common.o
+cyttsp5-$(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_MT_A) += cyttsp5_mta.o
+cyttsp5-$(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_MT_B) += cyttsp5_mtb.o
+cyttsp5-$(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_BUTTON) += cyttsp5_btn.o
+cyttsp5-$(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_PROXIMITY) += cyttsp5_proximity.o
+obj-$(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_DEVICETREE_SUPPORT) += cyttsp5_devtree.o
+ifdef CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5
+obj-y += cyttsp5_platform.o
+endif
+obj-$(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_I2C)	+= cyttsp5_i2c.o
+obj-$(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_SPI)	+= cyttsp5_spi.o
+obj-$(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_DEBUG_MDL)	+= cyttsp5_debug.o
+obj-$(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_LOADER)	+= cyttsp5_loader.o
+obj-$(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_DEVICE_ACCESS)	+= cyttsp5_device_access.o
+obj-$(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_TEST_DEVICE_ACCESS_API)	+= cyttsp5_test_device_access_api.o
+
+ifeq ($(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_DEBUG),y)
+CFLAGS_cyttsp5_core.o += -DDEBUG
+CFLAGS_cyttsp5_i2c.o += -DDEBUG
+CFLAGS_cyttsp5_spi.o += -DDEBUG
+CFLAGS_cyttsp5_mta.o += -DDEBUG
+CFLAGS_cyttsp5_mtb.o += -DDEBUG
+CFLAGS_cyttsp5_mt_common.o += -DDEBUG
+CFLAGS_cyttsp5_btn.o += -DDEBUG
+CFLAGS_cyttsp5_proximity.o += -DDEBUG
+CFLAGS_cyttsp5_device_access.o += -DDEBUG
+CFLAGS_cyttsp5_loader.o += -DDEBUG
+CFLAGS_cyttsp5_debug.o += -DDEBUG
+CFLAGS_cyttsp5_devtree.o += -DDEBUG
+CFLAGS_cyttsp5_platform.o += -DDEBUG
+endif
+ifeq ($(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_VDEBUG),y)
+CFLAGS_cyttsp5_core.o += -DVERBOSE_DEBUG
+CFLAGS_cyttsp5_i2c.o += -DVERBOSE_DEBUG
+CFLAGS_cyttsp5_spi.o += -DVERBOSE_DEBUG
+CFLAGS_cyttsp5_mta.o += -DVERBOSE_DEBUG
+CFLAGS_cyttsp5_mtb.o += -DVERBOSE_DEBUG
+CFLAGS_cyttsp5_mt_common.o += -DVERBOSE_DEBUG
+CFLAGS_cyttsp5_btn.o += -DVERBOSE_DEBUG
+CFLAGS_cyttsp5_proximity.o += -DVERBOSE_DEBUG
+CFLAGS_cyttsp5_device_access.o += -DVERBOSE_DEBUG
+CFLAGS_cyttsp5_loader.o += -DVERBOSE_DEBUG
+CFLAGS_cyttsp5_debug.o += -DVERBOSE_DEBUG
+CFLAGS_cyttsp5_devtree.o += -DVERBOSE_DEBUG
+CFLAGS_cyttsp5_platform.o += -DVERBOSE_DEBUG
+endif
+
+obj-$(CONFIG_FORCE_TOUCH_NDT) += ndt_stress.o
+

@@ -405,6 +405,7 @@ config TASK_DELAY_ACCT
 config TASK_XACCT
 	bool "Enable extended accounting over taskstats"
 	depends on TASKSTATS
+	default y
 	help
 	  Collect extended task accounting data and send the data
 	  to userland for processing over the taskstats interface.

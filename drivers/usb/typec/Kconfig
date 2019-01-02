@@ -1,0 +1,30 @@
+#
+# USB Typec driver configuration
+#
+menuconfig USB_TYPEC
+	bool "USB Typec drivers"
+
+config USB_TYPEC
+       bool "USB TYPEC"
+       depends on I2C
+       depends on USB
+       ---help---
+       Say Y here if you want to use USB TypeC.
+
+config USB_FUSB301
+       bool "USB FUSB301"
+       depends on USB_TYPEC
+       ---help---
+       Say Y here if you want to use the Fairchild chip For USB TypeC.
+
+config USB_TUSB320
+       bool "USB TUSB320"
+       depends on USB_TYPEC
+       ---help---
+       Say Y here if you want to use the TI tusb320 chip For USB TypeC.
+
+config USB_PI5USB
+       bool "USB PI5USB"
+       depends on USB_TYPEC
+       ---help---
+       Say Y here if you want to use the Pericom PI5USB30216 chip For USB TypeC.

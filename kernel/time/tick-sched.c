@@ -65,6 +65,11 @@ struct tick_sched *tick_get_tick_sched(int cpu)
 	return &per_cpu(tick_cpu_sched, cpu);
 }
 
+#if 1 // zte_dbg_timestamp, 20160121, below two should no offset more than 1
+volatile u64 zte_dbg_tick_do_update_jiffies64_seq_enter = 0;
+volatile u64 zte_dbg_tick_do_update_jiffies64_seq_exit = 0;
+volatile ktime_t zte_dbg_tick_do_update_jiffies64_cycle = { .tv64 = 0 };
+#endif
 /*
  * Must be called with interrupts disabled !
  */
@@ -82,6 +87,11 @@ static void tick_do_update_jiffies64(ktime_t now)
 
 	/* Reevalute with jiffies_lock held */
 	write_seqlock(&jiffies_lock);
+
+#if 1 // zte_dbg_timestamp, 20160121
+	zte_dbg_tick_do_update_jiffies64_seq_enter++;
+	zte_dbg_tick_do_update_jiffies64_cycle = now;
+#endif
 
 	delta = ktime_sub(now, last_jiffies_update);
 	if (delta.tv64 >= tick_period.tv64) {
@@ -104,7 +114,11 @@ static void tick_do_update_jiffies64(ktime_t now)
 		/* Keep the tick_next_period variable up to date */
 		tick_next_period = ktime_add(last_jiffies_update, tick_period);
 	}
+#if 1 // zte_dbg_timestamp, 20160121
+	zte_dbg_tick_do_update_jiffies64_seq_exit++;
+#endif
 	write_sequnlock(&jiffies_lock);
+	update_wall_time();
 }
 
 /*
