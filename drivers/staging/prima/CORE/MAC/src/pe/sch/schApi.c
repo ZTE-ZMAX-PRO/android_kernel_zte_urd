@@ -315,15 +315,7 @@ tSirRetStatus schSendBeaconReq( tpAniSirGlobal pMac, tANI_U8 *beaconPayload, tAN
   schLog(pMac, LOGE,FL("TimIeOffset:[%d]"),beaconParams->TimIeOffset );
 #endif
 
-  if (size >= WDI_BEACON_TEMPLATE_SIZE ||
-      size >= SCH_MAX_BEACON_SIZE) {
-      schLog(pMac, LOGE,FL("beacon size (%d) exceed WDI limit %d or host limit %d"),
-             size, WDI_BEACON_TEMPLATE_SIZE, SCH_MAX_BEACON_SIZE);
-      VOS_ASSERT(0);
-      vos_mem_free(beaconParams);
-      return eSIR_FAILURE;
-  }
-  vos_mem_copy(beaconParams->beacon, beaconPayload, size);
+  beaconParams->beacon = beaconPayload;
   beaconParams->beaconLength = (tANI_U32) size;
   msgQ.bodyptr = beaconParams;
   msgQ.bodyval = 0;
@@ -579,7 +571,7 @@ tANI_U32 limSendProbeRspTemplateToHal(tpAniSirGlobal pMac,tpPESession psessionEn
         */
 
         sirCopyMacAddr( pprobeRespParams->bssId,  psessionEntry->bssId);
-        vos_mem_copy(pprobeRespParams->probeRespTemplate, pFrame2Hal, nBytes);
+        pprobeRespParams->pProbeRespTemplate   = pFrame2Hal;
         pprobeRespParams->probeRespTemplateLen = nBytes;
         vos_mem_copy(pprobeRespParams->ucProxyProbeReqValidIEBmap,IeBitmap,(sizeof(tANI_U32) * 8));
         msgQ.type     = WDA_UPDATE_PROBE_RSP_TEMPLATE_IND;

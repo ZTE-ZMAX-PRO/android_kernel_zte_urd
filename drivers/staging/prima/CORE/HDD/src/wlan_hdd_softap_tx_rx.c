@@ -2031,10 +2031,7 @@ VOS_STATUS hdd_softap_RegisterSTA( hdd_adapter_t *pAdapter,
   
       pSapCtx->aStaInfo[staId].tlSTAState = WLANTL_STA_AUTHENTICATED;
       pAdapter->sessionCtx.ap.uIsAuthenticated = VOS_TRUE;
-      if (!vos_is_macaddr_broadcast(pPeerMacAddress))
-          vosStatus = wlan_hdd_send_sta_authorized_event(pAdapter, pHddCtx,
-                                                         pPeerMacAddress);
-   }
+   }                                            
    else
    {
 
@@ -2130,12 +2127,8 @@ VOS_STATUS hdd_softap_stop_bss( hdd_adapter_t *pAdapter)
        }
     }
 
-    if (pAdapter->device_mode == WLAN_HDD_SOFTAP)
-        wlan_hdd_restore_channels(pHddCtx);
-
     /* Mark the indoor channel (passive) to enable */
-    if (pHddCtx->cfg_ini->disable_indoor_channel &&
-                      pAdapter->device_mode == WLAN_HDD_SOFTAP) {
+    if (pHddCtx->cfg_ini->disable_indoor_channel) {
         hdd_update_indoor_channel(pHddCtx, false);
         sme_update_channel_list((tpAniSirGlobal)pHddCtx->hHal);
     }
