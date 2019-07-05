@@ -3381,7 +3381,6 @@ int xhci_queue_bulk_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
 	int start_cycle;
 	u32 field, length_field;
 	int zlp_required = 0;
-	int max_packet = 0;
 	bool last = false;
 
 	int running_total, trb_buff_len, ret;
